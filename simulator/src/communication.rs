@@ -1,2 +1,4 @@
-pub type Message = String;
-pub type Destination = String;
+pub struct Message {
+    pub destination: uuid::Uuid,
+    pub payload: bytes::Bytes,
+}

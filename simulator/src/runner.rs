@@ -1,3 +1,3 @@
-use crate::random;
+use crate::random::{self, Randomizer};
 
-pub type SimulationMain = dyn FnOnce(random::Seed) -> ();
+pub struct Runner {}

@@ -1,13 +1,19 @@
+use std::collections::HashSet;
+
 use crate::{
     metrics::{self, Metrics},
-    random,
+    random::{self, Randomizer},
 };
 
-struct Simulation {}
+struct Simulation {
+    randomizer: Randomizer,
+}
 
 impl Simulation {
     fn new(seed: random::Seed) -> Self {
-        Self {}
+        Self {
+            randomizer: Randomizer::new(seed),
+        }
     }
     fn start(&mut self) {}
     fn stop(&mut self) -> metrics::Metrics {
