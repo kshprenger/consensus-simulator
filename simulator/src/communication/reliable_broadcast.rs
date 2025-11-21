@@ -1,3 +1,8 @@
-use crate::communication::Message;
+use crate::{
+    communication::{Destination, EventType, Message},
+    simulation_handle::with_sim,
+};
 
-pub fn r_bcast(message: Message) {}
+pub fn r_bcast(message: Message) {
+    with_sim(|sim| sim.submit_event_after(EventType::Message(message), Destination::Broadcast, 1));
+}
