@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    communication::{Event, EventDeliveryQueue, EventId, EventType},
+    communication::{Destination, Event, EventDeliveryQueue, EventId, EventType},
     metrics::{self, Metrics},
     process::{ProcessHandle, ProcessId},
     random::{self, Randomizer},
@@ -31,28 +31,29 @@ impl Simulation {
         }
     }
 
-    pub(crate) fn submit_event_after(&mut self, event_type: EventType, after: Jiffies) -> EventId {
-        let curr_proc = self.curr_process();
+    pub(crate) fn submit_event_after(
+        &mut self,
+        event_type: EventType,
+        destination: Destination,
+        after: Jiffies,
+    ) -> EventId {
         let next_event_id = self.get_next_event_id();
         let will_arrive_at = after + self.global_time;
-
-        match event_type {
-            EventType::Timeout => {
-                self.metrics.track_timeout(curr_proc);
-            }
-            EventType::Message(message) => {
-                self.metrics.track_event();
-                todo!()
-            }
-        }
 
         let event = Event {
             id: next_event_id,
             event_type,
         };
 
-        self.devilery_queue_of(curr_proc)
-            .push(event, will_arrive_at);
+        let targets = match destination {
+            Destination::Broadcast => self.procs.keys().copied().collect::<Vec<ProcessId>>(),
+            Destination::SendSelf => vec![self.curr_process()],
+        };
+
+        targets.into_iter().for_each(|target| {
+            self.devilery_queue_of(target)
+                .push(event.clone(), will_arrive_at);
+        });
 
         next_event_id
     }
@@ -127,9 +128,6 @@ impl Simulation {
         if next_events.is_empty() {
             return false;
         }
-
-        // Fault injection/latency goes here
-
         self.deliver_events(next_events);
         return true;
     }
@@ -138,9 +136,11 @@ impl Simulation {
         events.into_iter().for_each(|(target, event)| {
             self.current_process = Some(target);
             let produced_messages = self.handle_of(target).on_event(event);
-            produced_messages.into_iter().for_each(|message| {
-                self.submit_event_after(EventType::Message(message), 0);
-            });
+            produced_messages
+                .into_iter()
+                .for_each(|(destination, message)| {
+                    self.submit_event_after(EventType::Message(message), destination, 0);
+                });
         })
     }
 
