@@ -1,4 +1,4 @@
-use std::ops::{Add, AddAssign};
+use std::ops::{Add, AddAssign, Mul};
 
 use crate::{
     communication::{Destination, Event, EventId, EventType},
@@ -19,6 +19,14 @@ impl Add for Jiffies {
 impl AddAssign<usize> for Jiffies {
     fn add_assign(&mut self, rhs: usize) {
         self.0 += rhs
+    }
+}
+
+impl Mul<Jiffies> for usize {
+    type Output = Self;
+
+    fn mul(self, rhs: Jiffies) -> Self::Output {
+        self + rhs.0
     }
 }
 

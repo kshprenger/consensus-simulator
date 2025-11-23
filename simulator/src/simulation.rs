@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use crate::{
-    communication::{Destination, Event, EventDeliveryQueue, EventId, EventType},
-    fault::Latency,
+    communication::{Destination, Event, EventId, EventType, TimePriorityEventQueue},
+    fault::{BandwidthType, Latency, NetworkBoundedQueue},
     history::ProcessStep,
     metrics::Metrics,
     process::{ProcessHandle, ProcessId},
@@ -13,7 +13,7 @@ use crate::{
 
 pub(crate) struct Simulation {
     latency: Latency,
-    procs: HashMap<ProcessId, (Box<dyn ProcessHandle>, EventDeliveryQueue)>,
+    procs: HashMap<ProcessId, (Box<dyn ProcessHandle>, NetworkBoundedQueue)>,
     metrics: Metrics,
     current_process: Option<ProcessId>,
     global_time: Jiffies,
@@ -69,10 +69,14 @@ impl Simulation {
         self.devilery_queue_of(self.curr_process()).remove(event);
     }
 
-    pub(crate) fn add_processes(&mut self, procs: Vec<Box<dyn ProcessHandle>>) {
-        procs.into_iter().enumerate().for_each(|(id, proc)| {
-            self.procs.insert(id, (proc, EventDeliveryQueue::new()));
-        });
+    pub(crate) fn add_process(
+        &mut self,
+        id: ProcessId,
+        bandwidth: BandwidthType,
+        proc: Box<dyn ProcessHandle>,
+    ) {
+        self.procs
+            .insert(id, (proc, NetworkBoundedQueue::new(bandwidth)));
     }
 
     pub(crate) fn run(&mut self) -> SimulationResult {
@@ -93,7 +97,7 @@ impl Simulation {
         self.current_process.expect("No current process")
     }
 
-    fn devilery_queue_of(&mut self, process_id: ProcessId) -> &mut EventDeliveryQueue {
+    fn devilery_queue_of(&mut self, process_id: ProcessId) -> &mut NetworkBoundedQueue {
         &mut self
             .procs
             .get_mut(&process_id)
@@ -184,7 +188,9 @@ impl Simulation {
                     .unwrap_or(false)
             })
             .filter_map(|(candidate, (_, candidate_queue))| {
-                candidate_queue.pop().map(|(event, _)| (*candidate, event))
+                candidate_queue
+                    .try_pop(self.global_time)
+                    .map(|event| (*candidate, event))
             })
             .collect()
     }

@@ -1,11 +1,11 @@
 use crate::{random::Randomizer, time::Jiffies};
 
-pub(crate) struct NetworkController {
+pub(crate) struct Latency {
     randomizer: Randomizer,
     max_latency: Jiffies,
 }
 
-impl NetworkController {
+impl Latency {
     pub(crate) fn new(randomizer: Randomizer, max_latency: Jiffies) -> Self {
         Self {
             randomizer,

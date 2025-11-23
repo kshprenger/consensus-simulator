@@ -6,6 +6,7 @@ mod process;
 mod random;
 mod runner;
 mod simulation;
+mod simulation_builder;
 mod simulation_handle;
 mod simulation_result;
 mod time;

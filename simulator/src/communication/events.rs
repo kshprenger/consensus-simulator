@@ -10,6 +10,16 @@ pub(crate) struct Event {
     pub event_type: EventType,
 }
 
+impl Event {
+    pub(crate) fn size(&self) -> usize {
+        size_of::<EventId>()
+            + match &self.event_type {
+                EventType::Timeout => 0,
+                EventType::Message(msg) => size_of::<ProcessId>() + msg.payload.len(),
+            }
+    }
+}
+
 #[derive(Eq, PartialEq, Ord, PartialOrd, Hash, Clone)]
 pub(crate) enum EventType {
     Timeout,
@@ -29,4 +39,4 @@ pub struct Message {
 }
 
 /// (Jiffies, Event) <=> At speciffied timestamp event will be delivered
-pub type EventDeliveryQueue = PriorityQueue<Event, Jiffies>;
+pub type TimePriorityEventQueue = PriorityQueue<Event, Jiffies>;
