@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::{
+    EventSet,
     communication::{Destination, Event},
     history::ProcessStep,
     metrics::Metrics,
@@ -10,15 +11,18 @@ use crate::{
     time::Jiffies,
 };
 
-pub struct Simulation {
+pub struct Simulation<P>
+where
+    P: ProcessHandle,
+{
     latency: Latency,
-    procs: HashMap<ProcessId, (Box<dyn ProcessHandle>, NetworkBoundedQueue)>,
+    procs: HashMap<ProcessId, (P, NetworkBoundedQueue)>,
     metrics: Metrics,
     global_time: Jiffies,
     max_steps: Jiffies,
 }
 
-impl Simulation {
+impl<P: ProcessHandle> Simulation<P> {
     pub(crate) fn new(
         seed: random::Seed,
         max_steps: Jiffies,
@@ -33,11 +37,7 @@ impl Simulation {
         }
     }
 
-    pub(crate) fn submit_event_set(
-        &mut self,
-        source: ProcessId,
-        set: HashSet<(Destination, Event)>,
-    ) {
+    pub(crate) fn submit_event_set(&mut self, source: ProcessId, set: EventSet) {
         set.into_iter().for_each(|(destination, event)| {
             self.submit_event_after(event, source, destination, Jiffies(1));
         });
@@ -63,12 +63,7 @@ impl Simulation {
         });
     }
 
-    pub(crate) fn add_process(
-        &mut self,
-        id: ProcessId,
-        bandwidth: BandwidthType,
-        proc: Box<dyn ProcessHandle>,
-    ) {
+    pub(crate) fn add_process(&mut self, id: ProcessId, bandwidth: BandwidthType, proc: P) {
         self.procs
             .insert(id, (proc, NetworkBoundedQueue::new(bandwidth)));
     }
@@ -86,7 +81,7 @@ impl Simulation {
     }
 }
 
-impl Simulation {
+impl<P: ProcessHandle> Simulation<P> {
     fn devilery_queue_of(&mut self, process_id: ProcessId) -> &mut NetworkBoundedQueue {
         &mut self
             .procs
@@ -95,7 +90,7 @@ impl Simulation {
             .1
     }
 
-    fn handle_of(&mut self, process_id: ProcessId) -> &mut Box<dyn ProcessHandle> {
+    fn handle_of(&mut self, process_id: ProcessId) -> &mut P {
         &mut self
             .procs
             .get_mut(&process_id)

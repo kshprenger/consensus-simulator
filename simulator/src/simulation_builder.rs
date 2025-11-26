@@ -1,11 +1,12 @@
 use crate::{
-    network_condition::BandwidthType, process::ProcessHandle, random::Seed, simulation::Simulation,
+    Simulation, network_condition::BandwidthType, process::ProcessHandle, random::Seed,
     time::Jiffies,
 };
 
-pub struct SimulationBuilder<F>
+pub struct SimulationBuilder<F, P>
 where
-    F: Fn() -> Box<dyn ProcessHandle>,
+    F: Fn() -> P,
+    P: ProcessHandle,
 {
     seed: Seed,
     max_steps: Jiffies,
@@ -15,11 +16,12 @@ where
     bandwidth: BandwidthType,
 }
 
-impl<F> SimulationBuilder<F>
+impl<F, P> SimulationBuilder<F, P>
 where
-    F: Fn() -> Box<dyn ProcessHandle>,
+    F: Fn() -> P,
+    P: ProcessHandle,
 {
-    pub fn new_with_process_factory(f: F) -> SimulationBuilder<F> {
+    pub fn new_with_process_factory(f: F) -> SimulationBuilder<F, P> {
         SimulationBuilder {
             seed: 0,
             max_steps: Jiffies(1000),
@@ -55,7 +57,7 @@ where
         self
     }
 
-    pub fn build(self) -> Simulation {
+    pub fn build(self) -> Simulation<P> {
         let mut simulation = Simulation::new(self.seed, self.max_steps, self.max_network_latency);
 
         (1..=self.process_count).for_each(|id| {
