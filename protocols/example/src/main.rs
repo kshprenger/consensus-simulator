@@ -44,8 +44,8 @@ fn main() {
     let m = SimulationBuilder::new_with_process_factory(|| ExampleProcess::new())
         .with_network_bandwidth(simulator::BandwidthType::Unbounded)
         .with_max_network_latency(Jiffies(2))
-        .with_max_steps(Jiffies(100_000))
-        .with_process_count(200)
+        .with_max_time(Jiffies(100_000))
+        .with_process_count(5)
         .with_seed(5)
         .build()
         .run();
