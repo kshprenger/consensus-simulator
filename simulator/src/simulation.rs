@@ -22,7 +22,7 @@ where
     max_steps: Jiffies,
 }
 
-pub(crate) type ProcessStep<M: Message> = (ProcessId, ProcessId, M);
+pub(crate) type ProcessStep<M> = (ProcessId, ProcessId, M);
 
 impl<P, M> Simulation<P, M>
 where
@@ -69,11 +69,12 @@ where
 {
     fn submit_messages(&mut self, source: ProcessId, messages: Vec<(Destination, M)>) {
         messages.into_iter().for_each(|(destination, event)| {
-            self.submit_event(event, source, destination, self.global_time + Jiffies(1));
+            // Happy path -> schedule on the next step
+            self.submit_message(event, source, destination, self.global_time + Jiffies(1));
         });
     }
 
-    fn submit_event(
+    fn submit_message(
         &mut self,
         message: M,
         source: ProcessId,
@@ -115,7 +116,7 @@ where
 
         match next_event {
             BandwidthQueueOptions::None => false,
-            BandwidthQueueOptions::MessageArrivedByLatency => true,
+            BandwidthQueueOptions::MessageArrivedByLatency => true, // Do nothing
             BandwidthQueueOptions::Some(message) => {
                 self.set_global_time(message.0);
                 self.execute_process_step(message.1);
