@@ -52,19 +52,19 @@ impl<M: Message> BandwidthQueue<M> {
         self.global_queue.Push(message);
     }
 
-    pub(crate) fn pop(&mut self) -> BandwidthQueueOptions<M> {
+    pub(crate) fn Pop(&mut self) -> BandwidthQueueOptions<M> {
         let closest_arriving_message = self.global_queue.Peek();
         let closest_squeezing_message = self.merged_fifo_buffers.peek();
 
         match (closest_arriving_message, closest_squeezing_message) {
             (None, None) => BandwidthQueueOptions::None,
-            (Some(_), None) => self.deliver_from_latency_queue(),
-            (None, Some(_)) => self.deliver_from_buffer(),
+            (Some(_), None) => self.DeliverFromLatencyQueue(),
+            (None, Some(_)) => self.DeliverFromBuffer(),
             (Some(l_message), Some(b_message)) => {
                 if l_message.0 <= b_message.0.0 {
-                    self.deliver_from_latency_queue()
+                    self.DeliverFromLatencyQueue()
                 } else {
-                    self.deliver_from_buffer()
+                    self.DeliverFromBuffer()
                 }
             }
         }
@@ -72,7 +72,7 @@ impl<M: Message> BandwidthQueue<M> {
 }
 
 impl<M: Message> BandwidthQueue<M> {
-    fn move_message_from_latency_queue_to_buffers(&mut self) {
+    fn MoveMessageFromLatencyQueueToBuffers(&mut self) {
         debug!("Moving message from latency queue to buffers");
         let mut message = self
             .global_queue
@@ -95,7 +95,7 @@ impl<M: Message> BandwidthQueue<M> {
         self.merged_fifo_buffers.push(std::cmp::Reverse(message));
     }
 
-    fn deliver_from_buffer(&mut self) -> BandwidthQueueOptions<M> {
+    fn DeliverFromBuffer(&mut self) -> BandwidthQueueOptions<M> {
         let message = self
             .merged_fifo_buffers
             .pop()
@@ -109,8 +109,8 @@ impl<M: Message> BandwidthQueue<M> {
         BandwidthQueueOptions::Some(message)
     }
 
-    fn deliver_from_latency_queue(&mut self) -> BandwidthQueueOptions<M> {
-        self.move_message_from_latency_queue_to_buffers();
+    fn DeliverFromLatencyQueue(&mut self) -> BandwidthQueueOptions<M> {
+        self.MoveMessageFromLatencyQueueToBuffers();
         BandwidthQueueOptions::MessageArrivedByLatency
     }
 }

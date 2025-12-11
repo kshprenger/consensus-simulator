@@ -117,7 +117,7 @@ where
     }
 
     fn Step(&mut self) -> bool {
-        let next_event = self.bandwidth_queue.pop();
+        let next_event = self.bandwidth_queue.Pop();
 
         match next_event {
             BandwidthQueueOptions::None => false,
