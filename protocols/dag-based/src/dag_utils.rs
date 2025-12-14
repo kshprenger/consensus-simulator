@@ -5,8 +5,8 @@ use simulator::ProcessId;
 pub type VertexPtr = Rc<Vertex>;
 type Round = Vec<Option<VertexPtr>>;
 
-fn IsSameVertex(v: &VertexPtr, u: &VertexPtr) -> bool {
-    ptr::eq(v.as_ref(), u.as_ref())
+pub fn SameVertex(v: &VertexPtr, u: &VertexPtr) -> bool {
+    Rc::ptr_eq(v, u)
 }
 
 #[derive(PartialEq, Eq, Hash)] // Hashing for fast lookup in buffers
@@ -46,7 +46,7 @@ impl RoundBasedDAG {
 
     // v & u already in the DAG
     pub fn PathExists(&mut self, v: VertexPtr, u: VertexPtr) -> bool {
-        if IsSameVertex(&v, &u) {
+        if SameVertex(&v, &u) {
             return true;
         }
 
@@ -59,7 +59,7 @@ impl RoundBasedDAG {
         while queue.len() > 0 {
             let curr = queue.pop_front().unwrap();
             for edge in &curr.strong_edges {
-                if IsSameVertex(edge, &u) {
+                if SameVertex(edge, &u) {
                     return true;
                 } else {
                     if self.visited[edge.round][edge.source] {
