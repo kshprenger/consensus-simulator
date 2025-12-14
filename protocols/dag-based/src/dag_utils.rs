@@ -2,7 +2,7 @@ use std::{collections::VecDeque, ops::Index, ptr, rc::Rc};
 
 use simulator::ProcessId;
 
-type VertexPtr = Rc<Vertex>;
+pub type VertexPtr = Rc<Vertex>;
 type Round = Vec<Option<VertexPtr>>;
 
 fn IsSameVertex(v: &VertexPtr, u: &VertexPtr) -> bool {
@@ -21,7 +21,14 @@ pub struct RoundBasedDAG {
 }
 
 impl RoundBasedDAG {
-    pub fn New(n: usize) -> Self {
+    pub fn New() -> Self {
+        Self {
+            matrix: Vec::new(),
+            visited: Vec::new(),
+        }
+    }
+
+    pub fn Init(&mut self, n: usize) {
         let genesis_vertices = (0..n)
             .map(|_| Vertex {
                 round: 0,
@@ -31,13 +38,9 @@ impl RoundBasedDAG {
             .map(|v| Some(VertexPtr::new(v)))
             .collect::<Round>();
 
-        let mut matrix = Vec::new();
-        matrix.push(genesis_vertices);
-
-        let mut visited = Vec::new();
-        visited.push((0..n).map(|_| false).collect::<Vec<bool>>());
-
-        Self { matrix, visited }
+        self.matrix.push(genesis_vertices);
+        self.visited
+            .push((0..n).map(|_| false).collect::<Vec<bool>>());
     }
 
     // v & u already in the DAG

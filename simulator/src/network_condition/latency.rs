@@ -21,9 +21,15 @@ impl<M: Message> LatencyQueue<M> {
     }
 
     pub(crate) fn Push(&mut self, mut message: RoutedMessage<M>) {
-        debug!("Arrival time before adding latency: {}", message.0);
-        message.0 += self.randomizer.RandomFromRange(0, self.max_latency.0);
-        debug!("Arrival time after adding random latency: {}", message.0);
+        debug!(
+            "Arrival time before adding latency: {}",
+            message.arrival_time
+        );
+        message.arrival_time += self.randomizer.RandomFromRange(0, self.max_latency.0);
+        debug!(
+            "Arrival time after adding random latency: {}",
+            message.arrival_time
+        );
         self.queue.push(std::cmp::Reverse(message));
     }
 

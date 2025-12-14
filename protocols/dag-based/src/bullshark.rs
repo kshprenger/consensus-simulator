@@ -1,9 +1,13 @@
+use std::{collections::VecDeque, rc::Rc};
+
 use simulator::*;
 
-use crate::dag_utils::RoundBasedDAG;
+use crate::dag_utils::{RoundBasedDAG, VertexPtr};
 
-#[derive(Clone, Eq, PartialEq, PartialOrd, Ord)]
-enum BullsharkMessage {}
+#[derive(Clone)]
+enum BullsharkMessage {
+    Vertex(VertexPtr),
+}
 
 impl Message for BullsharkMessage {
     fn VirtualSize(&self) -> usize {
@@ -14,13 +18,19 @@ impl Message for BullsharkMessage {
 struct Vertex {}
 
 struct Bullshark {
+    self_id: ProcessId,
     dag: RoundBasedDAG,
+    round: usize,
+    buffer: VecDeque<VertexPtr>,
 }
 
 impl Bullshark {
     fn New() -> Self {
         Self {
-            dag: RoundBasedDAG::New(69),
+            self_id: 0,
+            dag: RoundBasedDAG::New(),
+            round: 1,
+            buffer: VecDeque::new(),
         }
     }
 }
@@ -28,10 +38,11 @@ impl Bullshark {
 impl ProcessHandle<BullsharkMessage> for Bullshark {
     fn Bootstrap(
         &mut self,
-        assigned_id: ProcessId,
+        configuration: Configuration,
         outgoing: &mut simulator::OutgoingMessages<BullsharkMessage>,
     ) {
-        todo!()
+        self.dag.Init(configuration.proc_num);
+        self.self_id = configuration.assigned_id;
     }
 
     fn OnMessage(

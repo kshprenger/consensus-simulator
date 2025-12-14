@@ -12,6 +12,7 @@ mod time;
 pub use communication::OutgoingMessages;
 pub use communication::{Destination, Message};
 pub use network_condition::BandwidthType;
+pub use process::Configuration;
 pub use process::ProcessHandle;
 pub use process::ProcessId;
 pub use simulation::Simulation;

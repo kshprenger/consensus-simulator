@@ -2,7 +2,7 @@
 
 use std::time::Instant;
 
-use simulator::{Jiffies, Message, ProcessHandle, ProcessId, SimulationBuilder};
+use simulator::{Configuration, Jiffies, Message, ProcessHandle, ProcessId, SimulationBuilder};
 
 #[derive(Clone, Eq, PartialEq, PartialOrd, Ord)]
 enum ExampleMessage {
@@ -29,11 +29,11 @@ impl ExampleProcess {
 impl ProcessHandle<ExampleMessage> for ExampleProcess {
     fn Bootstrap(
         &mut self,
-        assigned_id: ProcessId,
+        configuration: Configuration,
         outgoing: &mut simulator::OutgoingMessages<ExampleMessage>,
     ) {
-        self.self_id = assigned_id;
-        if assigned_id == 1 {
+        self.self_id = configuration.assigned_id;
+        if configuration.assigned_id == 1 {
             outgoing.SendTo(2, ExampleMessage::Ping);
         }
     }

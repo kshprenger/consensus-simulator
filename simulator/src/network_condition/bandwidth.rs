@@ -14,7 +14,7 @@ pub enum BandwidthType {
     Bounded(usize), // Bytes per Jiffy
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub(crate) enum BandwidthQueueOptions<M: Message> {
     MessageArrivedByLatency,
     None,
@@ -48,7 +48,7 @@ impl<M: Message> BandwidthQueue<M> {
     }
 
     pub(crate) fn Push(&mut self, message: RoutedMessage<M>) {
-        debug!("Submitted message with base time: {}", message.0);
+        debug!("Submitted message with base time: {}", message.arrival_time);
         self.global_queue.Push(message);
     }
 
@@ -61,7 +61,7 @@ impl<M: Message> BandwidthQueue<M> {
             (Some(_), None) => self.DeliverFromLatencyQueue(),
             (None, Some(_)) => self.DeliverFromBuffer(),
             (Some(l_message), Some(b_message)) => {
-                if l_message.0 <= b_message.0.0 {
+                if l_message.arrival_time <= b_message.0.arrival_time {
                     self.DeliverFromLatencyQueue()
                 } else {
                     self.DeliverFromBuffer()
@@ -78,19 +78,20 @@ impl<M: Message> BandwidthQueue<M> {
             .global_queue
             .Pop()
             .expect("Global queue should not be empty");
-        self.current_buffers_sizes[message.1.0] += message.1.2.VirtualSize();
+        self.current_buffers_sizes[message.step.dest] += message.step.message.VirtualSize();
         debug!(
             "New process {} buffer's size: {}",
-            message.1.0, self.current_buffers_sizes[message.1.0]
+            message.step.dest, self.current_buffers_sizes[message.step.dest]
         );
         debug!(
             "Message arrival time before bandwidth adjustment: {}",
-            message.0
+            message.arrival_time
         );
-        message.0 += Jiffies(self.current_buffers_sizes[message.1.0] / self.bandwidth);
+        message.arrival_time +=
+            Jiffies(self.current_buffers_sizes[message.step.dest] / self.bandwidth);
         debug!(
             "Message arrival time after bandwidth adjustment: {}",
-            message.0
+            message.arrival_time
         );
         self.merged_fifo_buffers.push(std::cmp::Reverse(message));
     }
@@ -101,10 +102,10 @@ impl<M: Message> BandwidthQueue<M> {
             .pop()
             .expect("All buffers should not be empty")
             .0;
-        self.current_buffers_sizes[message.1.0] -= message.1.2.VirtualSize();
+        self.current_buffers_sizes[message.step.dest] -= message.step.message.VirtualSize();
         debug!(
             "New process {} buffer's size: {}",
-            message.1.0, self.current_buffers_sizes[message.1.0]
+            message.step.dest, self.current_buffers_sizes[message.step.dest]
         );
         BandwidthQueueOptions::Some(message)
     }

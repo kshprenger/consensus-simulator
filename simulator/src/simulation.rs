@@ -4,10 +4,10 @@ use log::debug;
 
 use crate::{
     OutgoingMessages,
-    communication::{Destination, Message},
+    communication::{Destination, Message, ProcessStep, RoutedMessage},
     metrics::Metrics,
     network_condition::{BandwidthQueue, BandwidthQueueOptions, BandwidthType, LatencyQueue},
-    process::{ProcessHandle, ProcessId},
+    process::{Configuration, ProcessHandle, ProcessId},
     random::{self, Randomizer},
     time::Jiffies,
 };
@@ -23,8 +23,6 @@ where
     global_time: Jiffies,
     max_steps: Jiffies,
 }
-
-pub(crate) type ProcessStep<M> = (ProcessId, ProcessId, M);
 
 impl<P, M> Simulation<P, M>
 where
@@ -90,10 +88,18 @@ where
             Destination::SendSelf => vec![source],
         };
 
-        debug!("Submited message, targets of the message: {targets:?}");
+        debug!("Submitting message, targets of the message: {targets:?}");
+
         targets.into_iter().for_each(|target| {
-            self.bandwidth_queue
-                .Push((base_arrival_time, (source, target, message.clone())));
+            let routed_message = RoutedMessage {
+                arrival_time: base_arrival_time,
+                step: ProcessStep {
+                    source,
+                    dest: target,
+                    message: message.clone(),
+                },
+            };
+            self.bandwidth_queue.Push(routed_message);
         });
     }
 
@@ -111,7 +117,11 @@ where
         for id in self.procs.keys().copied().collect::<Vec<ProcessId>>() {
             debug!("Executing initial step for {id}");
             let mut outgoing_messages = OutgoingMessages::New();
-            self.HandleOf(id).Bootstrap(id, &mut outgoing_messages);
+            let config = Configuration {
+                assigned_id: id,
+                proc_num: self.procs.keys().len(),
+            };
+            self.HandleOf(id).Bootstrap(config, &mut outgoing_messages);
             self.SubmitMessages(id, outgoing_messages.0);
         }
     }
@@ -123,8 +133,8 @@ where
             BandwidthQueueOptions::None => false,
             BandwidthQueueOptions::MessageArrivedByLatency => true, // Do nothing
             BandwidthQueueOptions::Some(message) => {
-                self.FastForwardClock(message.0);
-                self.ExecuteProcessStep(message.1);
+                self.FastForwardClock(message.arrival_time);
+                self.ExecuteProcessStep(message.step);
                 true
             }
         }
@@ -139,9 +149,9 @@ where
     fn ExecuteProcessStep(&mut self, step: ProcessStep<M>) {
         self.metrics.TrackEvent();
 
-        let source = step.0;
-        let dest = step.1;
-        let message = step.2;
+        let source = step.source;
+        let dest = step.dest;
+        let message = step.message;
 
         let mut outgoing_messages = OutgoingMessages::New();
 
