@@ -9,10 +9,11 @@ fn IsSameVertex(v: &VertexPtr, u: &VertexPtr) -> bool {
     ptr::eq(v.as_ref(), u.as_ref())
 }
 
+#[derive(PartialEq, Eq, Hash)] // Hashing for fast lookup in buffers
 pub struct Vertex {
-    round: usize,
-    source: ProcessId,
-    strong_edges: Vec<VertexPtr>,
+    pub round: usize,
+    pub source: ProcessId,
+    pub strong_edges: Vec<VertexPtr>,
 }
 
 pub struct RoundBasedDAG {
@@ -82,6 +83,14 @@ impl RoundBasedDAG {
             self.Grow(need_allocate_rounds);
             self.Insert(v)
         }
+    }
+
+    pub fn CurrentAllocatedRounds(&self) -> usize {
+        self.matrix.len()
+    }
+
+    pub fn CurrentMaxAllocatedRound(&self) -> usize {
+        self.CurrentAllocatedRounds() - 1
     }
 }
 

@@ -2,7 +2,7 @@
 
 use std::time::Instant;
 
-use simulator::{Configuration, Jiffies, Message, ProcessHandle, ProcessId, SimulationBuilder};
+use simulator::*;
 
 #[derive(Clone, Eq, PartialEq, PartialOrd, Ord)]
 enum ExampleMessage {
@@ -30,7 +30,7 @@ impl ProcessHandle<ExampleMessage> for ExampleProcess {
     fn Bootstrap(
         &mut self,
         configuration: Configuration,
-        outgoing: &mut simulator::OutgoingMessages<ExampleMessage>,
+        outgoing: &mut OutgoingMessages<ExampleMessage>,
     ) {
         self.self_id = configuration.assigned_id;
         if configuration.assigned_id == 1 {
@@ -42,7 +42,7 @@ impl ProcessHandle<ExampleMessage> for ExampleProcess {
         &mut self,
         from: ProcessId,
         message: ExampleMessage,
-        outgoing: &mut simulator::OutgoingMessages<ExampleMessage>,
+        outgoing: &mut OutgoingMessages<ExampleMessage>,
     ) {
         if from == 1 && self.self_id == 2 {
             assert!(message == ExampleMessage::Ping);
