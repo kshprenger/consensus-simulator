@@ -13,6 +13,7 @@ use crate::dag_utils::{RoundBasedDAG, SameVertex, Vertex, VertexPtr};
 #[derive(Clone)]
 pub enum BullsharkMessage {
     Vertex(VertexPtr),
+    Genesis(VertexPtr),
 }
 
 impl Message for BullsharkMessage {
@@ -57,11 +58,12 @@ impl ProcessHandle<BullsharkMessage> for Bullshark {
         self.proc_num = configuration.proc_num;
         self.dag.SetRoundSize(configuration.proc_num);
         // Shared genesis vertices
-        access.Broadcast(BullsharkMessage::Vertex(VertexPtr::new(Vertex {
+        let genesis_vertex = VertexPtr::new(Vertex {
             round: 0,
             source: self.self_id,
             strong_edges: Vec::new(),
-        })));
+        });
+        access.Broadcast(BullsharkMessage::Genesis(genesis_vertex));
     }
 
     // DAG construction: part 1
@@ -72,14 +74,14 @@ impl ProcessHandle<BullsharkMessage> for Bullshark {
         access: &mut SimulationAccess<BullsharkMessage>,
     ) {
         match message {
-            BullsharkMessage::Vertex(v) => {
-                // Shared genesis vertices
-                if v.round == 0 {
-                    self.dag.AddVertex(v);
-                    self.TryAdvanceRound(access);
-                    return;
-                }
+            BullsharkMessage::Genesis(v) => {
+                debug_assert!(v.round == 0);
+                self.dag.AddVertex(v);
+                self.TryAdvanceRound(access);
+                return;
+            }
 
+            BullsharkMessage::Vertex(v) => {
                 if v.strong_edges.len() < self.QuorumSize() || from != v.source {
                     return;
                 }
@@ -135,11 +137,13 @@ impl Bullshark {
         })
     }
 
+    #[allow(unused)]
     fn GetFirstPredefinedLeader(&self, w: usize) -> ProcessId {
         let round = 4 * w - 3;
         return self.GetLeaderId(round);
     }
 
+    #[allow(unused)]
     fn GetSecondPredefinedLeader(&self, w: usize) -> ProcessId {
         let round = 4 * w - 1;
         return self.GetLeaderId(round);
