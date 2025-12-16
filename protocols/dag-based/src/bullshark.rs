@@ -1,7 +1,7 @@
 // https://arxiv.org/pdf/2201.05677
 // https://arxiv.org/pdf/2209.05633
 
-use std::collections::{BTreeSet, HashSet};
+use std::collections::BTreeSet;
 
 use simulator::*;
 

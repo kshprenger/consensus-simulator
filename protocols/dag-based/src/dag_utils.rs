@@ -1,9 +1,4 @@
-use std::{
-    collections::{HashSet, VecDeque},
-    hash::{Hash, Hasher},
-    ops::Index,
-    rc::Rc,
-};
+use std::{collections::VecDeque, ops::Index, rc::Rc};
 
 use simulator::ProcessId;
 
