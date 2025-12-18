@@ -21,7 +21,7 @@ where
     H: ProcessHandle<M>,
 {
     dag_based_consensus: H,
-    messages: HashMap<BCBMessageId, (M, usize)>, // usize -> signature count, once it reached 2f+1 message pops out
+    messages: HashMap<BCBMessageId, (M, usize)>, // usize -> signature count, once it reaches 2f+1 message pops out
     waiting_certificates: HashSet<BCBMessageId>,
     process_id: ProcessId,
     message_id: usize,

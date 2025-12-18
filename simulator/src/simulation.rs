@@ -60,7 +60,7 @@ where
                 exit(1)
             }
         }
-        info!("looks good! ヽ(‘ー`)ノ");
+        info!("Looks good! ヽ(‘ー`)ノ");
         self.metrics.clone()
     }
 }
