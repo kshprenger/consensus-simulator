@@ -2,10 +2,7 @@
 
 use std::time::Instant;
 
-use simulator::{
-    time::{Jiffies, timer::TimerId},
-    *,
-};
+use simulator::*;
 
 #[derive(Clone, Eq, PartialEq, PartialOrd, Ord)]
 enum ExampleMessage {

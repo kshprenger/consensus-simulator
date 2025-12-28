@@ -29,3 +29,6 @@ pub use access::ScheduleTimerAfter;
 pub use access::SendTo;
 
 pub use network::BandwidthType;
+
+pub use time::Jiffies;
+pub use time::TimerId;

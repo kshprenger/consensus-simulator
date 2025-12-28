@@ -1,5 +1,7 @@
 pub mod timer;
 
+pub use timer::TimerId;
+
 use std::{
     cell::Cell,
     fmt::{Debug, Display},
