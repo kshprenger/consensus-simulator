@@ -3,7 +3,6 @@ use std::{cell::RefCell, rc::Rc};
 use crate::{
     Destination, Message, ProcessId,
     network::Network,
-    time::Now,
     time::{
         Jiffies,
         timer::{NextTimerId, TimerId, Timers},

@@ -1,7 +1,7 @@
 use std::{collections::VecDeque, ops::Index, rc::Rc};
 
 use simulator::{
-    ProcessId, metrics,
+    CurrentId, ProcessId, metrics,
     time::{self},
 };
 
@@ -72,9 +72,11 @@ impl RoundBasedDAG {
                     continue;
                 } else {
                     self.ordered[edge.round][edge.source] = true;
-                    metrics::Modify::<Vec<time::Jiffies>>("latency", |l| {
-                        l.push(time::Now() - edge.creation_time);
-                    });
+                    if CurrentId() == edge.source {
+                        metrics::Modify::<Vec<time::Jiffies>>("latency", |l| {
+                            l.push(time::Now() - edge.creation_time);
+                        });
+                    }
                 }
             }
         }
