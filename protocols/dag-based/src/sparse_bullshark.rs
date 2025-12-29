@@ -1,8 +1,10 @@
 // https://arxiv.org/pdf/2201.05677
 // https://arxiv.org/pdf/2209.05633
+// https://arxiv.org/pdf/2506.13998
 
 use std::collections::BTreeSet;
 
+use rand::{SeedableRng, rngs::StdRng};
 use simulator::*;
 
 use crate::{
@@ -11,20 +13,19 @@ use crate::{
 };
 
 #[derive(Clone)]
-pub enum BullsharkMessage {
+pub enum SparseBullsharkMessage {
     Vertex(VertexPtr),
     Genesis(VertexPtr),
 }
 
-impl Message for BullsharkMessage {
+impl Message for SparseBullsharkMessage {
     fn VirtualSize(&self) -> usize {
         69
     }
 }
 
-pub struct Bullshark {
+pub struct SparseBullshark {
     rbcast: ByzantineConsistentBroadcast,
-    self_id: ProcessId,
     proc_num: usize,
     dag: RoundBasedDAG,
     round: usize,
@@ -33,13 +34,14 @@ pub struct Bullshark {
     ordered_anchors_stack: Vec<VertexPtr>,
     wait: bool,
     current_timer: TimerId,
+    sampler: Option<StdRng>,
+    D: usize,
 }
 
-impl Bullshark {
-    pub fn New() -> Self {
+impl SparseBullshark {
+    pub fn New(D: usize) -> Self {
         Self {
             rbcast: ByzantineConsistentBroadcast::New(),
-            self_id: 0,
             proc_num: 0,
             dag: RoundBasedDAG::New(),
             round: 0,
@@ -48,34 +50,36 @@ impl Bullshark {
             ordered_anchors_stack: Vec::new(),
             wait: true,
             current_timer: 0,
+            sampler: None,
+            D,
         }
     }
 }
 
-impl ProcessHandle for Bullshark {
+impl ProcessHandle for SparseBullshark {
     fn Bootstrap(&mut self, configuration: Configuration) {
-        self.self_id = CurrentId();
         self.proc_num = configuration.proc_num;
+        self.sampler = Some(StdRng::seed_from_u64(configuration.seed));
         self.dag.SetRoundSize(configuration.proc_num);
         self.rbcast.Bootstrap(configuration);
 
         // Shared genesis vertices
         let genesis_vertex = VertexPtr::new(Vertex {
             round: 0,
-            source: self.self_id,
+            source: CurrentId(),
             strong_edges: Vec::new(),
             creation_time: time::Now(),
         });
 
         self.rbcast
-            .ReliablyBroadcast(BullsharkMessage::Genesis(genesis_vertex));
+            .ReliablyBroadcast(SparseBullsharkMessage::Genesis(genesis_vertex));
     }
 
     // DAG construction: part 1
     fn OnMessage(&mut self, from: ProcessId, message: MessagePtr) {
         if let Some(bs_message) = self.rbcast.Process(from, message.As::<BCBMessage>()) {
-            match bs_message.As::<BullsharkMessage>().as_ref() {
-                BullsharkMessage::Genesis(v) => {
+            match bs_message.As::<SparseBullsharkMessage>().as_ref() {
+                SparseBullsharkMessage::Genesis(v) => {
                     Debug!("Got genesis");
                     debug_assert!(v.round == 0);
                     self.dag.AddVertex(v.clone());
@@ -83,8 +87,9 @@ impl ProcessHandle for Bullshark {
                     return;
                 }
 
-                BullsharkMessage::Vertex(v) => {
+                SparseBullsharkMessage::Vertex(v) => {
                     Debug!("Got vertex from: {from}");
+                    debug_assert!(v.strong_edges.len() <= self.D + 2);
 
                     // Validity check
                     if v.strong_edges.len() < self.QuorumSize() || from != v.source {
@@ -179,7 +184,7 @@ impl ProcessHandle for Bullshark {
 }
 
 // Utils
-impl Bullshark {
+impl SparseBullshark {
     fn AdversaryThreshold(&self) -> usize {
         (self.proc_num - 1) / 3
     }
@@ -189,7 +194,7 @@ impl Bullshark {
     }
 
     fn DirectCommitThreshold(&self) -> usize {
-        self.AdversaryThreshold() + 1
+        2 * self.AdversaryThreshold() + 1
     }
 
     fn NonNoneVerticesCountForRound(&self, round: usize) -> usize {
@@ -200,16 +205,44 @@ impl Bullshark {
         self.NonNoneVerticesCountForRound(round) >= self.QuorumSize()
     }
 
-    fn CreateVertex(&self, round: usize) -> VertexPtr {
+    fn SampleCandidates(&mut self, round: usize) -> Vec<VertexPtr> {
+        let candidates: Vec<VertexPtr> = self.dag[round].iter().flatten().cloned().collect();
+
+        if candidates.len() <= self.D {
+            return candidates;
+        }
+
+        use rand::prelude::IndexedRandom;
+        let mut random_candidates = candidates
+            .choose_multiple(
+                self.sampler.as_mut().expect("Sampler not initialized"),
+                self.D,
+            )
+            .cloned()
+            .collect::<BTreeSet<VertexPtr>>();
+
+        // Try add myself
+        if self.dag[round][CurrentId()].is_some() {
+            random_candidates.insert(self.dag[round][CurrentId()].clone().unwrap());
+        }
+
+        // Try add anchor
+        if self.GetAnchor(round).is_some() {
+            random_candidates.insert(self.GetAnchor(round).unwrap());
+        }
+
+        debug_assert!(random_candidates.len() >= self.D);
+        debug_assert!(random_candidates.len() <= self.D + 2);
+
+        random_candidates.into_iter().collect()
+    }
+
+    fn CreateVertex(&mut self, round: usize) -> VertexPtr {
         // Infinite source of client txns
         VertexPtr::new(Vertex {
             round,
-            source: self.self_id,
-            strong_edges: self.dag[round - 1]
-                .iter()
-                .flatten() // Remove option
-                .cloned()
-                .collect::<Vec<VertexPtr>>(),
+            source: CurrentId(),
+            strong_edges: self.SampleCandidates(round - 1),
             creation_time: time::Now(),
         })
     }
@@ -231,7 +264,7 @@ impl Bullshark {
 }
 
 // DAG construction: part 2
-impl Bullshark {
+impl SparseBullshark {
     fn TryAdvanceRound(&mut self) {
         if self.QuorumReachedForRound(self.round) {
             Debug!("Advancing to {} round", self.round + 1);
@@ -244,7 +277,8 @@ impl Bullshark {
     fn BroadcastVertex(&mut self, round: usize) {
         let v = self.CreateVertex(round);
         self.TryAddToDAG(v.clone());
-        self.rbcast.ReliablyBroadcast(BullsharkMessage::Vertex(v));
+        self.rbcast
+            .ReliablyBroadcast(SparseBullsharkMessage::Vertex(v));
     }
 
     fn TryAddToDAG(&mut self, v: VertexPtr) -> bool {
@@ -283,7 +317,7 @@ impl Bullshark {
 }
 
 // Consensus logic
-impl Bullshark {
+impl SparseBullshark {
     fn TryOrdering(&mut self, v: VertexPtr) {
         // Note: leaders are on even rounds
         if v.round % 2 == 1 || v.round == 0 {
