@@ -188,6 +188,10 @@ impl Bullshark {
         2 * self.AdversaryThreshold() + 1
     }
 
+    fn DirectCommitThreshold(&self) -> usize {
+        self.AdversaryThreshold() + 1
+    }
+
     fn NonNoneVerticesCountForRound(&self, round: usize) -> usize {
         self.dag[round].iter().flatten().count()
     }
@@ -296,7 +300,7 @@ impl Bullshark {
                     .iter()
                     .filter(|vote| vote.strong_edges.contains(&anchor))
                     .count();
-                if vote_count >= self.AdversaryThreshold() + 1 {
+                if vote_count >= self.DirectCommitThreshold() {
                     self.OrderAnchors(anchor);
                 }
             }
