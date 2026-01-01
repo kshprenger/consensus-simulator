@@ -13,9 +13,8 @@ pub trait ProcessHandle {
     // Deliver message with source process
     fn OnMessage(&mut self, from: ProcessId, message: MessagePtr);
 
-    // Fire timer with id that was returned on SchedulerTimerAfter() call
-    #[allow(unused)]
-    fn OnTimer(&mut self, id: TimerId) {
+    // Fire timer with id that was returned on ScheduleTimerAfter() call
+    fn OnTimer(&mut self, #[allow(unused)] id: TimerId) {
         // Default - No timers
     }
 }

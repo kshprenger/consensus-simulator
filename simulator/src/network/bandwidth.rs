@@ -14,13 +14,6 @@ pub enum BandwidthType {
     Bounded(usize), // Bytes per Jiffy
 }
 
-#[derive(Clone)]
-pub(crate) enum BandwidthQueueOptions {
-    MessageArrivedByLatency,
-    None,
-    Some(RoutedMessage),
-}
-
 pub(crate) struct BandwidthQueue {
     bandwidth: usize,
     global_queue: LatencyQueue,
@@ -52,12 +45,12 @@ impl BandwidthQueue {
         self.global_queue.Push(message);
     }
 
-    pub(crate) fn Pop(&mut self) -> BandwidthQueueOptions {
+    pub(crate) fn Pop(&mut self) -> Option<RoutedMessage> {
         let closest_arriving_message = self.global_queue.Peek();
         let closest_squeezing_message = self.merged_fifo_buffers.peek();
 
         match (closest_arriving_message, closest_squeezing_message) {
-            (None, None) => BandwidthQueueOptions::None,
+            (None, None) => None,
             (Some(_), None) => self.DeliverFromLatencyQueue(),
             (None, Some(_)) => self.DeliverFromBuffer(),
             (Some(l_message), Some(b_message)) => {
@@ -114,7 +107,7 @@ impl BandwidthQueue {
         self.merged_fifo_buffers.push(std::cmp::Reverse(message));
     }
 
-    fn DeliverFromBuffer(&mut self) -> BandwidthQueueOptions {
+    fn DeliverFromBuffer(&mut self) -> Option<RoutedMessage> {
         let message = self
             .merged_fifo_buffers
             .pop()
@@ -125,11 +118,11 @@ impl BandwidthQueue {
             "New process {} buffer's size: {}",
             message.step.dest, self.current_buffers_sizes[message.step.dest]
         );
-        BandwidthQueueOptions::Some(message)
+        Some(message)
     }
 
-    fn DeliverFromLatencyQueue(&mut self) -> BandwidthQueueOptions {
+    fn DeliverFromLatencyQueue(&mut self) -> Option<RoutedMessage> {
         self.MoveMessageFromLatencyQueueToBuffers();
-        BandwidthQueueOptions::MessageArrivedByLatency
+        None
     }
 }

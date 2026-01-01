@@ -9,21 +9,19 @@ use crate::{
     process::{ProcessId, ProcessPool, UniqueProcessHandle},
     progress::Bar,
     random::{self},
-    time::{FastForwardClock, Jiffies, Now, timer::Timers},
+    time::{self, Jiffies, timer::Timers},
 };
 
 pub struct Simulation {
     actors: Vec<SharedActor>,
-    max_time: Jiffies,
+    time_budget: Jiffies,
     progress_bar: Bar,
 }
-
-const K_PROGRESS_TIMES: usize = 10;
 
 impl Simulation {
     pub(crate) fn New(
         seed: random::Seed,
-        max_time: Jiffies,
+        time_budget: Jiffies,
         max_network_latency: Jiffies,
         bandwidth_type: BandwidthType,
         procs: Vec<(ProcessId, UniqueProcessHandle)>,
@@ -31,8 +29,6 @@ impl Simulation {
         let _ = env_logger::try_init();
 
         let proc_pool = ProcessPool::NewShared(procs);
-
-        let mut actors = Vec::new();
 
         let network_actor = Rc::new(RefCell::new(Network::New(
             seed,
@@ -45,48 +41,51 @@ impl Simulation {
 
         access::SetupAccess(network_actor.clone(), timers_actor.clone());
 
-        actors.push(network_actor as SharedActor);
-        actors.push(timers_actor as SharedActor);
+        let actors = vec![network_actor as SharedActor, timers_actor as SharedActor];
 
         Self {
             actors,
-            max_time,
-            progress_bar: Bar::New(max_time, max_time.0 / K_PROGRESS_TIMES),
+            time_budget,
+            progress_bar: Bar::New(time_budget),
         }
     }
 
-    pub fn Run(&mut self) {
+    pub fn Run(mut self) {
         self.Start();
 
-        while self.KeepRunning() {
-            match self.PeekClosest() {
-                None => {
-                    error!("DEADLOCK! (ﾉಥ益ಥ）ﾉ ┻━┻ Try with RUST_LOG=debug");
-                    exit(1)
-                }
-                Some((time, actor)) => {
-                    FastForwardClock(time);
-                    actor.borrow_mut().Step();
-                    access::Drain(); // Only after Step() to avoid double borrow_mut() of SharedActor
-                    self.progress_bar.MakeProgress(Now());
-                }
-            }
+        while time::Now() < self.time_budget {
+            self.Step();
         }
+
+        // For small simulations progress bar is not fullfilling
+        self.progress_bar.MakeProgress(self.time_budget);
 
         info!("Looks good! ヽ(‘ー`)ノ");
     }
 }
 
 impl Simulation {
-    fn KeepRunning(&mut self) -> bool {
-        Now() < self.max_time
-    }
-
     fn Start(&mut self) {
         self.actors.iter_mut().for_each(|actor| {
             actor.borrow_mut().Start();
             access::Drain(); // Only after Start() to avoid double borrow_mut() of SharedActor
         });
+    }
+
+    fn Step(&mut self) {
+        match self.PeekClosest() {
+            None => {
+                error!("DEADLOCK! (ﾉಥ益ಥ）ﾉ ┻━┻ Try with RUST_LOG=debug");
+                exit(1)
+            }
+            Some((future, actor)) => {
+                time::FastForwardClock(future);
+                actor.borrow_mut().Step();
+                access::Drain(); // Only after Step() to avoid double borrow_mut() of SharedActor
+                self.progress_bar
+                    .MakeProgress(std::cmp::min(future, self.time_budget));
+            }
+        }
     }
 
     // O(n) -> O(log(n))?

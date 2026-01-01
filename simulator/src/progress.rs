@@ -1,50 +1,43 @@
-use std::env;
-
 use indicatif::{ProgressBar, ProgressStyle};
+use log::log_enabled;
 
 use crate::time::Jiffies;
+
+const K_PROGRESS_TIMES: usize = 10;
 
 pub(crate) struct Bar {
     bar: ProgressBar,
     prev_log: usize,
-    k: usize,
+    delta: usize,
 }
 
 impl Bar {
-    pub(crate) fn New(total: Jiffies, k: usize) -> Self {
-        let bar = ProgressBar::new(total.0 as u64);
-        bar.set_style(
-            ProgressStyle::default_bar()
-                .template("[{bar:60.cyan/blue}] {pos}/{len} Jiffies {msg}")
-                .unwrap(),
-        );
-        match env::var("RUST_LOG") {
-            Ok(value) => {
-                if value == "info" {
-                    bar.set_position(0);
-                }
-            }
-            Err(_) => {}
-        }
+    pub(crate) fn New(total: Jiffies) -> Self {
+        let bar = if log_enabled!(log::Level::Info) {
+            let bar = ProgressBar::new(total.0 as u64);
+            bar.set_style(
+                ProgressStyle::default_bar()
+                    .template("[{bar:60.cyan/blue}] {pos}/{len} Jiffies {msg}")
+                    .unwrap(),
+            );
+            bar.set_position(0);
+            bar
+        } else {
+            ProgressBar::hidden()
+        };
+
         Self {
             bar: bar,
             prev_log: 0,
-            k,
+            delta: total.0 / K_PROGRESS_TIMES,
         }
     }
 
     pub(crate) fn MakeProgress(&mut self, time: Jiffies) {
-        let d = time.0 / self.k;
+        let d = time.0 / self.delta;
         if d > self.prev_log {
             self.prev_log = d;
-            match env::var("RUST_LOG") {
-                Ok(value) => {
-                    if value == "info" {
-                        self.bar.set_position(time.0 as u64)
-                    }
-                }
-                Err(_) => {}
-            }
+            self.bar.set_position(time.0 as u64)
         }
     }
 }

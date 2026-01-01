@@ -1,5 +1,3 @@
-use std::{cell::RefCell, rc::Rc};
-
 use crate::{
     Simulation, network::BandwidthType, process::ProcessHandle, random::Seed, time::Jiffies,
 };
@@ -9,7 +7,7 @@ where
     F: Fn() -> Box<dyn ProcessHandle>,
 {
     seed: Seed,
-    max_steps: Jiffies,
+    time_budget: Jiffies,
     max_network_latency: Jiffies,
     process_count: usize,
     factory: F,
@@ -23,7 +21,7 @@ where
     pub fn NewFromFactory(f: F) -> SimulationBuilder<F> {
         SimulationBuilder {
             seed: 69,
-            max_steps: Jiffies(1_000_000),
+            time_budget: Jiffies(1_000_000),
             max_network_latency: Jiffies(10),
             process_count: 5,
             factory: f,
@@ -36,8 +34,8 @@ where
         self
     }
 
-    pub fn MaxTime(mut self, max_steps: Jiffies) -> Self {
-        self.max_steps = max_steps;
+    pub fn TimeBudget(mut self, time_budget: Jiffies) -> Self {
+        self.time_budget = time_budget;
         self
     }
 
@@ -59,7 +57,7 @@ where
     pub fn Build(self) -> Simulation {
         Simulation::New(
             self.seed,
-            self.max_steps,
+            self.time_budget,
             self.max_network_latency,
             self.bandwidth,
             (1..=self.process_count)

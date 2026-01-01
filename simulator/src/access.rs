@@ -11,8 +11,8 @@ use crate::{
 
 pub struct SimulationAccess {
     process_on_execution: ProcessId,
-    pub(crate) scheduled_messages: Vec<(ProcessId, Destination, Rc<dyn Message>)>, // Static allocations? =(
-    pub(crate) scheduled_timers: Vec<(ProcessId, TimerId, Jiffies)>, // Static allocations? =(
+    pub(crate) scheduled_messages: Vec<(ProcessId, Destination, Rc<dyn Message>)>,
+    pub(crate) scheduled_timers: Vec<(ProcessId, TimerId, Jiffies)>,
     network: Rc<RefCell<Network>>,
     timers: Rc<RefCell<Timers>>,
 }

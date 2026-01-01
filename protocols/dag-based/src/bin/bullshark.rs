@@ -7,7 +7,7 @@ fn main() {
 
     SimulationBuilder::NewFromFactory(|| Box::new(Bullshark::New()))
         .MaxLatency(Jiffies(50))
-        .MaxTime(Jiffies(10000))
+        .TimeBudget(Jiffies(10000))
         .NICBandwidth(BandwidthType::Unbounded)
         .ProcessInstances(100)
         .Seed(234565432345)

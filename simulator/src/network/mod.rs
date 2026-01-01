@@ -1,12 +1,9 @@
 mod bandwidth;
 mod latency;
 
-use std::cell::RefMut;
-use std::collections::BTreeMap;
 use std::rc::Rc;
 
 pub(crate) use bandwidth::BandwidthQueue;
-pub(crate) use bandwidth::BandwidthQueueOptions;
 pub use bandwidth::BandwidthType;
 pub(crate) use latency::LatencyQueue;
 use log::debug;
@@ -15,7 +12,6 @@ use crate::Configuration;
 use crate::Destination;
 use crate::Message;
 use crate::MessagePtr;
-use crate::ProcessHandle;
 use crate::ProcessId;
 use crate::access;
 use crate::actor::SimulationActor;
@@ -39,7 +35,6 @@ impl Network {
         message: Rc<dyn Message>,
         source: ProcessId,
         destination: Destination,
-        base_arrival_time: Jiffies,
     ) {
         let targets = match destination {
             Destination::Broadcast => self.procs.Keys().copied().collect::<Vec<ProcessId>>(),
@@ -50,7 +45,7 @@ impl Network {
 
         targets.into_iter().for_each(|target| {
             let routed_message = RoutedMessage {
-                arrival_time: base_arrival_time,
+                arrival_time: Now() + Jiffies(1), // Without any latency message will arrive on next timepoint;
                 step: ProcessStep {
                     source,
                     dest: target,
@@ -105,7 +100,7 @@ impl Network {
             .drain(..)
             .into_iter()
             .for_each(|(from, destination, message)| {
-                self.SubmitSingleMessage(message, from, destination, Now() + Jiffies(1));
+                self.SubmitSingleMessage(message, from, destination);
             });
     }
 }
@@ -130,9 +125,8 @@ impl SimulationActor for Network {
         let next_event = self.bandwidth_queue.Pop();
 
         match next_event {
-            BandwidthQueueOptions::None => {}
-            BandwidthQueueOptions::MessageArrivedByLatency => {}
-            BandwidthQueueOptions::Some(message) => {
+            None => {}
+            Some(message) => {
                 self.ExecuteProcessStep(message.step);
             }
         }
