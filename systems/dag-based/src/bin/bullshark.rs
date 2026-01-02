@@ -20,14 +20,14 @@ fn main() {
 
     println!(
         "Vertices ordered: {}",
-        metrics::Get::<Vec<Jiffies>>("latency").unwrap().len()
+        metrics::Get::<Vec<Jiffies>>("latency").len()
     );
     println!(
         "Latency distribution: {:?}",
-        metrics::Get::<Vec<Jiffies>>("latency").unwrap()
+        metrics::Get::<Vec<Jiffies>>("latency")
     );
     println!(
         "Timeouts fired: {}",
-        metrics::Get::<usize>("timeouts-fired").unwrap()
+        metrics::Get::<usize>("timeouts-fired")
     );
 }

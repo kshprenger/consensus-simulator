@@ -12,12 +12,13 @@ pub fn Set<T: 'static>(key: &str, value: T) {
     });
 }
 
-pub fn Get<T: 'static + Clone>(key: &str) -> Option<T> {
+pub fn Get<T: 'static + Clone>(key: &str) -> T {
     METRICS.with(|m| {
         m.borrow()
             .get(key)
             .and_then(|v| v.downcast_ref::<T>())
             .cloned()
+            .expect(&format!("No metric found for key: {key}"))
     })
 }
 
