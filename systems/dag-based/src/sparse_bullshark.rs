@@ -59,9 +59,7 @@ impl SparseBullshark {
 impl ProcessHandle for SparseBullshark {
     fn Bootstrap(&mut self, configuration: Configuration) {
         self.proc_num = configuration.proc_num;
-        self.sampler = Some(StdRng::seed_from_u64(
-            configuration.seed + CurrentId() as u64,
-        ));
+        self.sampler = Some(StdRng::seed_from_u64(configuration.seed));
         self.dag.SetRoundSize(configuration.proc_num);
         self.rbcast.Bootstrap(configuration);
 

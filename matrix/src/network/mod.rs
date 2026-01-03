@@ -111,7 +111,7 @@ impl SimulationActor for Network {
             debug!("Executing initial step for {id}");
 
             let config = Configuration {
-                seed: self.seed,
+                seed: self.seed + *id as u64, // Prevent resonance between procs
                 proc_num: self.procs.Keys().len(),
             };
 
