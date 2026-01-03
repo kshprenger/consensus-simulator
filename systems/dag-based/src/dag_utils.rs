@@ -77,6 +77,7 @@ impl RoundBasedDAG {
                             l.push(time::Now() - edge.creation_time);
                         });
                     }
+                    queue.push_back(edge);
                 }
             }
         }

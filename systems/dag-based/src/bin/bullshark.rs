@@ -1,33 +1,20 @@
 use dag_based::bullshark::Bullshark;
 use matrix::{BandwidthType, SimulationBuilder, metrics, time::Jiffies};
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 fn main() {
+    metrics::Clear();
     metrics::Set::<Vec<Jiffies>>("latency", Vec::new());
     metrics::Set::<usize>("timeouts-fired", 0);
-
-    (4..1000).into_par_iter().for_each(|proc_num| {
-        SimulationBuilder::NewFromFactory(|| Box::new(Bullshark::New()))
-            .MaxLatency(Jiffies(50))
-            .TimeBudget(Jiffies(10000))
-            .NICBandwidth(BandwidthType::Unbounded)
-            .ProcessInstances(proc_num)
-            .Seed(234565432345)
-            .Build()
-            .Run();
-        println!("{proc_num}")
-    });
-
+    SimulationBuilder::NewFromFactory(|| Box::new(Bullshark::New()))
+        .MaxLatency(Jiffies(1000))
+        .TimeBudget(Jiffies(1000000))
+        .NICBandwidth(BandwidthType::Unbounded)
+        .ProcessInstances(100)
+        .Seed(23456765)
+        .Build()
+        .Run();
     println!(
-        "Vertices ordered: {}",
+        "Ordered: {:?}",
         metrics::Get::<Vec<Jiffies>>("latency").len()
-    );
-    println!(
-        "Latency distribution: {:?}",
-        metrics::Get::<Vec<Jiffies>>("latency")
-    );
-    println!(
-        "Timeouts fired: {}",
-        metrics::Get::<usize>("timeouts-fired")
     );
 }
