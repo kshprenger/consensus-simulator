@@ -112,43 +112,20 @@ impl ProcessHandle for SparseBullshark {
                             return;
                         }
 
+                        // Note: anchor vertices are on even rounds
                         match self.round % 4 {
-                            0 => {
-                                // Wait for first steady leader
+                            0 | 2 => {
+                                // Wait for steady leader of this round
                                 if self.GetAnchor(self.round).is_some() {
                                     self.TryAdvanceRound();
                                 }
                             }
-                            2 => {
-                                // Wait for second steady leader
-                                if self.GetAnchor(self.round).is_some() {
-                                    self.TryAdvanceRound();
-                                }
-                            }
-                            1 => {
+                            1 | 3 => {
                                 // Wait for 2f+1 links for anchor in previous round
                                 if self.GetAnchor(self.round - 1).is_none() {
                                     return;
                                 }
 
-                                if self.dag[self.round]
-                                    .iter()
-                                    .flatten()
-                                    .map(|v| {
-                                        v.strong_edges
-                                            .contains(&self.GetAnchor(self.round - 1).unwrap())
-                                    })
-                                    .count()
-                                    >= self.QuorumSize()
-                                {
-                                    self.TryAdvanceRound();
-                                }
-                            }
-                            3 => {
-                                // Wait 2f+1 links to anchor in previous round
-                                if self.GetAnchor(self.round - 1).is_none() {
-                                    return;
-                                }
                                 if self.dag[self.round]
                                     .iter()
                                     .flatten()
@@ -201,7 +178,7 @@ impl SparseBullshark {
         self.NonNoneVerticesCountForRound(round) >= self.QuorumSize()
     }
 
-    fn SampleCandidates(&mut self, round: usize) -> Vec<VertexPtr> {
+    fn SampleRandomCandidates(&mut self, round: usize) -> Vec<VertexPtr> {
         let candidates: Vec<VertexPtr> = self.dag[round].iter().flatten().cloned().collect();
 
         if candidates.len() <= self.D {
@@ -218,13 +195,13 @@ impl SparseBullshark {
             .collect::<BTreeSet<VertexPtr>>();
 
         // Try add myself
-        if self.dag[round][CurrentId()].is_some() {
-            random_candidates.insert(self.dag[round][CurrentId()].clone().unwrap());
+        if let Some(me) = self.dag[round][CurrentId()].clone() {
+            random_candidates.insert(me);
         }
 
         // Try add anchor
-        if self.GetAnchor(round).is_some() {
-            random_candidates.insert(self.GetAnchor(round).unwrap());
+        if let Some(anchor) = self.GetAnchor(round) {
+            random_candidates.insert(anchor);
         }
 
         debug_assert!(random_candidates.len() >= self.D);
@@ -238,7 +215,7 @@ impl SparseBullshark {
         VertexPtr::new(Vertex {
             round,
             source: CurrentId(),
-            strong_edges: self.SampleCandidates(round - 1),
+            strong_edges: self.SampleRandomCandidates(round - 1),
             creation_time: time::Now(),
         })
     }
@@ -376,12 +353,7 @@ impl SparseBullshark {
     }
 
     fn OrderHistory(&mut self) {
-        while !self.ordered_anchors_stack.is_empty() {
-            let anchor = self
-                .ordered_anchors_stack
-                .pop()
-                .expect("Should not be empty");
-
+        while let Some(anchor) = self.ordered_anchors_stack.pop() {
             self.dag.OrderFrom(&anchor);
         }
     }

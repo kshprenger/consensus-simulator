@@ -104,49 +104,25 @@ impl ProcessHandle for Bullshark {
                     }
 
                     if self.round == v.round {
-                        // Note: anchor vertices are on even rounds
                         if !self.wait {
                             self.TryAdvanceRound();
                             return;
                         }
 
+                        // Note: anchor vertices are on even rounds
                         match self.round % 4 {
-                            0 => {
-                                // Wait for first steady leader
+                            0 | 2 => {
+                                // Wait for steady leader of this round
                                 if self.GetAnchor(self.round).is_some() {
                                     self.TryAdvanceRound();
                                 }
                             }
-                            2 => {
-                                // Wait for second steady leader
-                                if self.GetAnchor(self.round).is_some() {
-                                    self.TryAdvanceRound();
-                                }
-                            }
-                            1 => {
+                            1 | 3 => {
                                 // Wait for 2f+1 links for anchor in previous round
                                 if self.GetAnchor(self.round - 1).is_none() {
                                     return;
                                 }
 
-                                if self.dag[self.round]
-                                    .iter()
-                                    .flatten()
-                                    .map(|v| {
-                                        v.strong_edges
-                                            .contains(&self.GetAnchor(self.round - 1).unwrap())
-                                    })
-                                    .count()
-                                    >= self.QuorumSize()
-                                {
-                                    self.TryAdvanceRound();
-                                }
-                            }
-                            3 => {
-                                // Wait 2f+1 links to anchor in previous round
-                                if self.GetAnchor(self.round - 1).is_none() {
-                                    return;
-                                }
                                 if self.dag[self.round]
                                     .iter()
                                     .flatten()
@@ -170,7 +146,7 @@ impl ProcessHandle for Bullshark {
 
     fn OnTimer(&mut self, id: TimerId) {
         if id == self.current_timer {
-            Debug!("Timer fired: {}", id);
+            Debug!("Timer fired: {id}");
             metrics::Modify::<usize>("timeouts-fired", |count| *count += 1);
             self.wait = false;
             self.TryAdvanceRound();
@@ -337,12 +313,7 @@ impl Bullshark {
     }
 
     fn OrderHistory(&mut self) {
-        while !self.ordered_anchors_stack.is_empty() {
-            let anchor = self
-                .ordered_anchors_stack
-                .pop()
-                .expect("Should not be empty");
-
+        while let Some(anchor) = self.ordered_anchors_stack.pop() {
             self.dag.OrderFrom(&anchor);
         }
     }
