@@ -86,7 +86,6 @@ impl Simulation {
         }
     }
 
-    // O(n) -> O(log(n))?
     fn PeekClosest(&mut self) -> Option<(Jiffies, SharedActor)> {
         self.actors
             .iter_mut()
