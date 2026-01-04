@@ -2,27 +2,26 @@ use std::time::Instant;
 
 use dag_based::bullshark::Bullshark;
 use matrix::{BandwidthType, SimulationBuilder, metrics, time::Jiffies};
+use rayon::prelude::*;
 
 fn main() {
-    let pool = rayon::ThreadPoolBuilder::new().build().unwrap();
     let start = Instant::now();
-    pool.scope(|s| {
-        (4..100).into_iter().for_each(|proc_num| {
-            s.spawn(move |_| {
-                metrics::Clear();
-                metrics::Set::<Vec<Jiffies>>("latency", Vec::new());
-                metrics::Set::<usize>("timeouts-fired", 0);
-                SimulationBuilder::NewFromFactory(|| Box::new(Bullshark::New()))
-                    .MaxLatency(Jiffies(10))
-                    .TimeBudget(Jiffies(10000))
-                    .NICBandwidth(BandwidthType::Unbounded)
-                    .ProcessInstances(proc_num)
-                    .Seed(23456765)
-                    .Build()
-                    .Run();
-                println!("Ordered: {}", metrics::Get::<Vec<Jiffies>>("latency").len());
-            });
-        })
+    (4..200).into_par_iter().for_each(|proc_num| {
+        metrics::Clear();
+        metrics::Set::<Vec<Jiffies>>("latency", Vec::new());
+        metrics::Set::<usize>("timeouts-fired", 0);
+        SimulationBuilder::NewFromFactory(|| Box::new(Bullshark::New()))
+            .MaxLatency(Jiffies(600))
+            .TimeBudget(Jiffies(60 * 1000))
+            .NICBandwidth(BandwidthType::Unbounded)
+            .ProcessInstances(proc_num)
+            .Seed(proc_num as u64)
+            .Build()
+            .Run();
+        println!(
+            "{proc_num}: Ordered: {}",
+            metrics::Get::<Vec<Jiffies>>("latency").len()
+        );
     });
     println!("elapsed: {:?}", start.elapsed())
 }

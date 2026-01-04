@@ -1,5 +1,5 @@
 use crate::{
-    Simulation, metrics,
+    Simulation,
     network::BandwidthType,
     process::ProcessHandle,
     random::Seed,
@@ -77,6 +77,7 @@ where
     pub fn Build(self) -> Simulation {
         InitLogger();
 
+        // thread_locals may be reused in other simulations, so we need to reset them
         tso::Reset();
         clock::Reset();
 
