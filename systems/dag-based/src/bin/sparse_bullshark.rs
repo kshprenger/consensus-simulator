@@ -1,9 +1,9 @@
 use dag_based::sparse_bullshark::SparseBullshark;
-use matrix::{BandwidthType, SimulationBuilder, metrics, time::Jiffies};
+use matrix::{BandwidthType, SimulationBuilder, anykv, time::Jiffies};
 
 fn main() {
-    metrics::Set::<Vec<Jiffies>>("latency", Vec::new());
-    metrics::Set::<usize>("timeouts-fired", 0);
+    anykv::Set::<Vec<Jiffies>>("latency", Vec::new());
+    anykv::Set::<usize>("timeouts-fired", 0);
 
     SimulationBuilder::NewDefault()
         .AddPool("Validators", 100, || SparseBullshark::New(10))
@@ -16,11 +16,11 @@ fn main() {
 
     println!(
         "Vertices ordered: {}",
-        metrics::Get::<Vec<Jiffies>>("latency").len()
+        anykv::Get::<Vec<Jiffies>>("latency").len()
     );
 
     println!(
         "Timeouts fired: {}",
-        metrics::Get::<usize>("timeouts-fired")
+        anykv::Get::<usize>("timeouts-fired")
     );
 }

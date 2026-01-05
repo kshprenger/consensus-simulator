@@ -147,7 +147,7 @@ impl ProcessHandle for SparseBullshark {
 
     fn OnTimer(&mut self, id: TimerId) {
         if id == self.current_timer {
-            metrics::Modify::<usize>("timeouts-fired", |count| *count += 1);
+            anykv::Modify::<usize>("timeouts-fired", |count| *count += 1);
             self.wait = false;
             self.TryAdvanceRound();
         }
