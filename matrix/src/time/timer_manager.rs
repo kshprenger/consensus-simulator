@@ -10,12 +10,12 @@ pub(crate) fn NextTimerId() -> TimerId {
     global::GlobalUniqueId()
 }
 
-pub(crate) struct Timers {
+pub(crate) struct TimerManager {
     working_timers: BinaryHeap<Reverse<(Jiffies, (ProcessId, TimerId))>>,
     procs: Rc<ProcessPool>,
 }
 
-impl Timers {
+impl TimerManager {
     pub(crate) fn New(procs: Rc<ProcessPool>) -> Self {
         Self {
             working_timers: BinaryHeap::new(),
@@ -35,7 +35,7 @@ impl Timers {
     }
 }
 
-impl SimulationActor for Timers {
+impl SimulationActor for TimerManager {
     fn Start(&mut self) {
         // Do nothing
     }

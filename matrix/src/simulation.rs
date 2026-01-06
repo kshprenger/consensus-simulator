@@ -9,7 +9,7 @@ use crate::{
     process::{ProcessId, ProcessPool, UniqueProcessHandle},
     progress::Bar,
     random::{self},
-    time::{Jiffies, timer::Timers},
+    time::{Jiffies, timer_manager::TimerManager},
 };
 
 pub struct Simulation {
@@ -47,7 +47,7 @@ impl Simulation {
             proc_pool.clone(),
         )));
 
-        let timers_actor = Rc::new(RefCell::new(Timers::New(proc_pool.clone())));
+        let timers_actor = Rc::new(RefCell::new(TimerManager::New(proc_pool.clone())));
 
         global::SetupAccess(network_actor.clone(), timers_actor.clone(), pool_listing);
 

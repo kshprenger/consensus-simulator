@@ -1,6 +1,6 @@
 use std::cell::RefCell;
 
-use crate::{MessagePtr, ProcessId, process::Configuration, time::timer::TimerId};
+use crate::{MessagePtr, ProcessId, process::Configuration, time::timer_manager::TimerId};
 
 pub(crate) type UniqueProcessHandle = Box<dyn ProcessHandle>;
 pub(crate) type MutableProcessHandle = RefCell<UniqueProcessHandle>;

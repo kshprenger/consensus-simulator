@@ -5,7 +5,7 @@ use crate::{
     network::Network,
     time::{
         Jiffies,
-        timer::{NextTimerId, TimerId, Timers},
+        timer_manager::{NextTimerId, TimerId, TimerManager},
     },
 };
 
@@ -15,13 +15,13 @@ pub struct SimulationAccess {
     pub(crate) scheduled_timers: Vec<(ProcessId, TimerId, Jiffies)>,
     pools: HashMap<String, Vec<ProcessId>>,
     network: Rc<RefCell<Network>>,
-    timers: Rc<RefCell<Timers>>,
+    timers: Rc<RefCell<TimerManager>>,
 }
 
 impl SimulationAccess {
     pub(crate) fn New(
         network: Rc<RefCell<Network>>,
-        timers: Rc<RefCell<Timers>>,
+        timers: Rc<RefCell<TimerManager>>,
         pools: HashMap<String, Vec<ProcessId>>,
     ) -> Self {
         Self {
@@ -89,7 +89,7 @@ thread_local! {
 
 pub(crate) fn SetupAccess(
     network: Rc<RefCell<Network>>,
-    timers: Rc<RefCell<Timers>>,
+    timers: Rc<RefCell<TimerManager>>,
     pools: HashMap<String, Vec<ProcessId>>,
 ) {
     ACCESS_HANDLE
