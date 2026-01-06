@@ -22,4 +22,5 @@ pub(crate) use clock::FastForwardClock;
 pub(crate) fn ResetGlobals() {
     clock::Reset();
     tso::Reset();
+    anykv::Clear();
 }

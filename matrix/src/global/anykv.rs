@@ -32,7 +32,7 @@ pub fn Modify<T: 'static>(key: &str, f: impl FnOnce(&mut T)) {
     });
 }
 
-pub fn Clear() {
+pub(crate) fn Clear() {
     ANY_KV.with(|m| {
         m.borrow_mut().clear();
     });

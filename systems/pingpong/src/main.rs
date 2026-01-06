@@ -69,18 +69,18 @@ impl ProcessHandle for ExampleProcess {
 
 fn main() {
     let start = Instant::now();
-
-    anykv::Set::<usize>("pings", 0);
-    anykv::Set::<usize>("pongs", 0);
-
-    SimulationBuilder::NewDefault()
+    let sim = SimulationBuilder::NewDefault()
         .AddPool("ExamplePool", 2, || ExampleProcess::New())
         .NICBandwidth(matrix::BandwidthType::Unbounded)
         .MaxLatency(Jiffies(10))
         .TimeBudget(Jiffies(100_000_000))
         .Seed(5)
-        .Build()
-        .Run();
+        .Build();
+
+    anykv::Set::<usize>("pings", 0);
+    anykv::Set::<usize>("pongs", 0);
+
+    sim.Run();
 
     println!(
         "Done, elapsed: {:?}. Pings sent: {}, Pongs sent: {}",
