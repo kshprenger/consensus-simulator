@@ -4,13 +4,13 @@ use log::debug;
 
 use crate::{
     Now, ProcessId, actor::SimulationActor, global, process::ProcessPool, time::Jiffies,
-    tso::NextGlobalUniqueId,
+    tso::GlobalUniqueId,
 };
 
 pub type TimerId = usize;
 
 pub(crate) fn NextTimerId() -> TimerId {
-    NextGlobalUniqueId()
+    GlobalUniqueId()
 }
 
 pub(crate) struct Timers {
