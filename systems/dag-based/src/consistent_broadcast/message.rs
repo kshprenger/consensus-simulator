@@ -15,7 +15,7 @@ pub enum BCBMessage {
 }
 
 const ID_SIZE: usize = 128;
-const SIG_SIZE: usize = 64;
+const SIG_SIZE: usize = 64; // For example Ed25519 or Secp256k1
 
 impl Message for BCBMessage {
     fn VirtualSize(&self) -> usize {

@@ -18,7 +18,13 @@ pub enum BullsharkMessage {
 
 impl Message for BullsharkMessage {
     fn VirtualSize(&self) -> usize {
-        69
+        // Round, ProcessId
+        4 + 4
+            + 131072 // 2^17 = Block of 256 txns by 512 byte each
+            + match self {
+                BullsharkMessage::Genesis(v) => v.strong_edges.len() * 32, // sha256 block pointers
+                BullsharkMessage::Vertex(v) =>  v.strong_edges.len() * 32, // sha256 block pointers
+            }
     }
 }
 
@@ -204,7 +210,7 @@ impl Bullshark {
     }
 
     fn StartTimer(&mut self) {
-        self.current_timer = ScheduleTimerAfter(Jiffies(200));
+        self.current_timer = ScheduleTimerAfter(Jiffies(400));
         Debug!("New timer scheduled: {}", self.current_timer);
         self.wait = true;
     }

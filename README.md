@@ -82,6 +82,7 @@ fn main() {
   - `NICBandwidth(BandwidthType)`: Configures network bandwidth limits.
     - `Bounded(usize)`
     - Or `Unbounded`
+  - `Build() -> Simulation`: Clears global vars and builds simulation
 - **`Simulation`**: The engine driving the event loop.
   - `Run()`: Starts the simulation loop.
 
