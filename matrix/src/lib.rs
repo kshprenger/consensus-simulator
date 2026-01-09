@@ -14,7 +14,6 @@ pub mod time;
 pub use communication::MessagePtr;
 pub use communication::{Destination, Message};
 
-pub use process::Configuration;
 pub use process::ProcessHandle;
 pub use process::ProcessId;
 

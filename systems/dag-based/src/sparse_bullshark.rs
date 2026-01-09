@@ -4,7 +4,10 @@
 
 use std::collections::BTreeSet;
 
-use matrix::{global::anykv, *};
+use matrix::{
+    global::{anykv, configuration},
+    *,
+};
 use rand::{SeedableRng, rngs::StdRng};
 
 use crate::{
@@ -56,11 +59,11 @@ impl Default for SparseBullshark {
     }
 }
 impl ProcessHandle for SparseBullshark {
-    fn Bootstrap(&mut self, configuration: Configuration) {
-        self.proc_num = configuration.proc_num;
-        self.sampler = Some(StdRng::seed_from_u64(configuration.seed));
-        self.dag.SetRoundSize(configuration.proc_num);
-        self.rbcast.Bootstrap(configuration);
+    fn Bootstrap(&mut self) {
+        self.proc_num = configuration::ProcessNumber();
+        self.sampler = Some(StdRng::seed_from_u64(configuration::Seed()));
+        self.dag.SetRoundSize(configuration::ProcessNumber());
+        self.rbcast.Bootstrap(configuration::ProcessNumber());
 
         // Shared genesis vertices
         let genesis_vertex = VertexPtr::new(Vertex {

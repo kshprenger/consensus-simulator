@@ -30,15 +30,18 @@ impl Message for MyMessage {
 Implement `ProcessHandle` to define how your process reacts to initialization, messages, and timers.
 
 ```rust
-use matrix::{ProcessHandle, Configuration, ProcessId, MessagePtr, TimerId};
+use matrix::{ProcessHandle, ProcessId, MessagePtr, TimerId, Jiffies};
 use matrix::{Broadcast, SendTo, ScheduleTimerAfter, CurrentId, Debug};
+use matrix::global::configuration;
 
+#[derive(Default)]
 struct MyProcess;
 
 impl ProcessHandle for MyProcess {
-    fn Bootstrap(&mut self, config: Configuration) {
-        Debug!("Starting process {}", config.proc_num);
+    fn Bootstrap(&mut self) {
+        Debug!("Starting process {} of {}", CurrentId(), configuration::ProcessNumber());
         // Schedule initial events or broadcast messages
+        ScheduleTimerAfter(Jiffies(100));
     }
 
     fn OnMessage(&mut self, from: ProcessId, message: MessagePtr) {
@@ -47,8 +50,9 @@ impl ProcessHandle for MyProcess {
         }
     }
 
-    fn OnTimer(&mut self, id: TimerId) {
+    fn OnTimer(&mut self, _id: TimerId) {
         // Handle timeouts
+        Broadcast(MyMessage { data: 42 });
     }
 }
 ```
@@ -58,11 +62,14 @@ impl ProcessHandle for MyProcess {
 Use `SimulationBuilder` to configure and start the simulation.
 
 ```rust
-use matrix::SimulationBuilder;
+use matrix::{SimulationBuilder, Jiffies, BandwidthType};
 
 fn main() {
-    let mut simulation = SimulationBuilder::NewDefault()
-        .AddPool("PoolName", 4, MyProcess::New)
+    let simulation = SimulationBuilder::NewDefault()
+        .AddPool::<MyProcess>("PoolName", 4)
+        .NICBandwidth(BandwidthType::Unbounded)
+        .MaxLatency(Jiffies(10))
+        .TimeBudget(Jiffies(1_000_000))
         .Build();
 
     simulation.Run();
@@ -78,7 +85,7 @@ fn main() {
   - `Seed(u64)`: Sets the random seed for deterministic execution.
   - `TimeBudget(Jiffies)`: Sets the maximum duration of the simulation.
   - `MaxLatency(Jiffies)`: Sets the maximum network latency.
-  - `AddPool<P: ProcessHandle + 'static>(&str, usize, impl Fn() -> P)`: Creates pool of processes with specified name and size.
+  - `AddPool<P: ProcessHandle + Default + 'static>(&str, usize)`: Creates pool of processes with specified name and size.
   - `NICBandwidth(BandwidthType)`: Configures network bandwidth limits.
     - `Bounded(usize)`
     - Or `Unbounded`
@@ -98,11 +105,18 @@ These functions are available globally but must be called within the context of 
 - **`ListPool(&str) -> Vec<ProcessId>`**: List all processes that are in the pool with specified name. Panics if pool does not exist.
 - **`GlobalUniqueId() -> usize`**: Generates globally-unique id.
 
-### Any Key-Value (for passing any values, metrics etc.)
+### Configuration (`matrix::global::configuration`)
+
+- **`Seed() -> u64`**: Returns the specific seed for the current process (derived from global seed and process ID).
+- **`ProcessNumber() -> usize`**: Returns total number of processes in the simulation.
+
+### Any Key-Value (`matrix::global::anykv`)
+
+Useful for passing values, metrics, or shared state between processes or back to the host.
 
 - **`Get<T>(&str) -> T`**
 - **`Set<T>(&str, T)`**
-- **`Modify<T>(&str,impl FnOnce(&mut T))`**: Modify in-place.
+- **`Modify<T>(&str, impl FnOnce(&mut T))`**: Modify in-place.
 
 ### Logging & Debugging
 
@@ -122,7 +136,8 @@ Matrix output is controlled via the `RUST_LOG` environment variable.
 - **`RUST_LOG=debug`**:
   - Enables the `Debug!` macro output from within processes.
   - Shows crucial event timepoints during execution
-  - In order to filter events use the same variable (read docs for log crate)
+- **`RUST_LOG=pingpong=debug`**:
+  - Filter events: only `Debug!` macro enabled for user crate (replace `pingpong` with your crate name).
 
 Example run:
 

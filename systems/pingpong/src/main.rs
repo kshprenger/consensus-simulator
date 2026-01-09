@@ -25,7 +25,7 @@ struct ExampleProcess {
 }
 
 impl ProcessHandle for ExampleProcess {
-    fn Bootstrap(&mut self, _configuration: Configuration) {
+    fn Bootstrap(&mut self) {
         if CurrentId() == 1 {
             assert!(ListPool("ExamplePool").len() == 2);
             assert!(ListPool("ExamplePool")[0] == 1);

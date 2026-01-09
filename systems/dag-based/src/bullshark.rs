@@ -3,7 +3,10 @@
 
 use std::collections::BTreeSet;
 
-use matrix::{global::anykv, *};
+use matrix::{
+    global::{anykv, configuration},
+    *,
+};
 
 use crate::{
     consistent_broadcast::{BCBMessage, ByzantineConsistentBroadcast},
@@ -59,11 +62,11 @@ impl Default for Bullshark {
 }
 
 impl ProcessHandle for Bullshark {
-    fn Bootstrap(&mut self, configuration: Configuration) {
+    fn Bootstrap(&mut self) {
         self.self_id = CurrentId();
-        self.proc_num = configuration.proc_num;
-        self.dag.SetRoundSize(configuration.proc_num);
-        self.rbcast.Bootstrap(configuration);
+        self.proc_num = configuration::ProcessNumber();
+        self.dag.SetRoundSize(configuration::ProcessNumber());
+        self.rbcast.Bootstrap(configuration::ProcessNumber());
 
         // Shared genesis vertices
         let genesis_vertex = VertexPtr::new(Vertex {

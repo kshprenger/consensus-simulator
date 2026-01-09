@@ -8,7 +8,6 @@ pub use bandwidth::BandwidthType;
 pub(crate) use latency::LatencyQueue;
 use log::debug;
 
-use crate::Configuration;
 use crate::Destination;
 use crate::Message;
 use crate::MessagePtr;
@@ -18,6 +17,7 @@ use crate::actor::SimulationActor;
 use crate::communication::ProcessStep;
 use crate::communication::RoutedMessage;
 use crate::global;
+use crate::global::configuration;
 use crate::process::ProcessPool;
 use crate::random::Randomizer;
 use crate::random::Seed;
@@ -110,14 +110,11 @@ impl SimulationActor for Network {
         self.procs.IterMut().for_each(|(id, mut handle)| {
             debug!("Executing initial step for {id}");
 
-            let config = Configuration {
-                seed: self.seed + *id as u64, // Prevent resonance between procs
-                proc_num: self.procs.Keys().len(),
-            };
+            configuration::SetupLocalConfiguration(*id, self.seed);
 
             global::SetProcess(*id);
 
-            handle.Bootstrap(config);
+            handle.Bootstrap();
         });
     }
 

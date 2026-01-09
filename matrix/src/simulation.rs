@@ -49,6 +49,7 @@ impl Simulation {
 
         let timers_actor = Rc::new(RefCell::new(TimerManager::New(proc_pool.clone())));
 
+        global::configuration::SetupGlobalConfiguration(proc_pool.Size());
         global::SetupAccess(network_actor.clone(), timers_actor.clone(), pool_listing);
 
         let actors = vec![network_actor as SharedActor, timers_actor as SharedActor];

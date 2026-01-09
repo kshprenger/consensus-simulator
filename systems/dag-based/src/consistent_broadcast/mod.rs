@@ -6,7 +6,7 @@ use std::{
     rc::Rc,
 };
 
-use matrix::{Broadcast, Configuration, CurrentId, Message, MessagePtr, ProcessId, SendTo};
+use matrix::{Broadcast, CurrentId, Message, MessagePtr, ProcessId, SendTo};
 
 use crate::consistent_broadcast::message::BCBMessageId;
 
@@ -58,9 +58,9 @@ impl ByzantineConsistentBroadcast {
         Broadcast(BCBMessage::Initiate((next_id, shared)));
     }
 
-    pub(crate) fn Bootstrap(&mut self, configuration: Configuration) {
+    pub(crate) fn Bootstrap(&mut self, proc_num: usize) {
         self.process_id = CurrentId();
-        self.proc_num = configuration.proc_num;
+        self.proc_num = proc_num;
     }
 
     pub(crate) fn Process(
