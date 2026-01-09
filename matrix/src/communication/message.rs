@@ -4,7 +4,9 @@ use crate::{process::ProcessId, time::Jiffies};
 
 pub trait Message: Any {
     // In bytes
-    fn VirtualSize(&self) -> usize;
+    fn VirtualSize(&self) -> usize {
+        usize::default()
+    }
 }
 
 pub struct MessagePtr(Rc<dyn Message>);
