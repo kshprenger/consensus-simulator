@@ -10,13 +10,13 @@ fn main() {
     let file = File::create("results.csv").unwrap();
     let file = Mutex::new(file);
 
-    (4..1000).into_par_iter().for_each(|k_validators| {
+    (4..3000).into_par_iter().for_each(|k_validators| {
         // 1 jiffy == 1 real millisecond
         let sim = SimulationBuilder::NewDefault()
             .AddPool::<Bullshark>("Validators", k_validators)
             .MaxLatency(Jiffies(400)) // 400 ms of max network latency
             .TimeBudget(Jiffies(1200_000)) // Simulating 20 min of real time execution
-            .NICBandwidth(BandwidthType::Bounded(1 * 1024 * 1024 * 1024 / (8 * 1000))) // 1Gb/sec NICs
+            .NICBandwidth(BandwidthType::Bounded(10 * 1024 * 1024 * 1024 / (8 * 1000))) // 1Gb/sec NICs
             .Seed(k_validators as u64)
             .Build();
 

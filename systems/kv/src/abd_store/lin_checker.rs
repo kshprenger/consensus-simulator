@@ -50,35 +50,6 @@ pub fn CheckLinearizable(history: &ExecutionHistory) -> bool {
             }
         }
 
-        let missing_values: Vec<Value> = read_values.difference(&written_values).cloned().collect();
-
-        if !missing_values.is_empty() {
-            println!(
-                "Key {}: Found {} values read from unlogged/pending writes: {:?}",
-                key,
-                missing_values.len(),
-                missing_values
-            );
-
-            for v in missing_values {
-                // Synthesize a Write that must have happened.
-                // We know it must have finished before the first Read that saw it.
-                let first_read_end = ops
-                    .iter()
-                    .filter(|o| matches!(o.op, Operation::Read(rv) if rv == v))
-                    .map(|o| o.end)
-                    .min()
-                    .unwrap_or(max_time);
-
-                ops.push(Call {
-                    key,
-                    op: Operation::Write(v),
-                    start: 0, // We don't know when it started
-                    end: first_read_end,
-                });
-            }
-        }
-
         ops.sort_by_key(|op| op.end);
         if !CheckSingleKey(&ops) {
             println!("Linearizability violation for key {}!", key);
