@@ -15,7 +15,7 @@ fn main() {
         let sim = SimulationBuilder::NewDefault()
             .AddPool::<Bullshark>("Validators", k_validators)
             .MaxLatency(Jiffies(400)) // 400 ms of max network latency
-            .TimeBudget(Jiffies(1200_000)) // Simulating 20 min of real time execution
+            .TimeBudget(Jiffies(240_000)) // Simulating 4 min of real time execution
             .NICBandwidth(BandwidthType::Bounded(10 * 1024 * 1024 * 1024 / (8 * 1000))) // 10Gb/sec NICs
             .Seed(k_validators as u64)
             .Build();
