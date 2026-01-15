@@ -64,7 +64,7 @@ impl ProcessHandle for ExampleProcess {
 
 fn main() {
     let start = Instant::now();
-    let sim = SimulationBuilder::NewDefault()
+    let mut sim = SimulationBuilder::NewDefault()
         .AddPool::<ExampleProcess>("ExamplePool", 2)
         .NICBandwidth(BandwidthType::Unbounded)
         .MaxLatency(Jiffies(10))
