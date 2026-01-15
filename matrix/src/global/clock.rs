@@ -8,7 +8,7 @@ thread_local! {
     pub(crate) static CLOCK: Cell<Jiffies> = Cell::new(Jiffies(0))
 }
 
-pub(crate) fn Reset() {
+pub(crate) fn Drop() {
     CLOCK.with(|cell| cell.set(Jiffies(0)));
 }
 

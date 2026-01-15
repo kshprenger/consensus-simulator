@@ -12,6 +12,6 @@ pub fn GlobalUniqueId() -> usize {
     })
 }
 
-pub(crate) fn Reset() {
+pub(crate) fn Drop() {
     TSO.with(|cell| cell.set(0));
 }

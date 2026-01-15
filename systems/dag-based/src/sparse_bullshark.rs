@@ -331,7 +331,6 @@ impl SparseBullshark {
                             .any(|v| SameVertex(&v.upgrade().unwrap(), &anchor))
                     })
                     .count();
-                println!("{vote_count}");
                 if vote_count >= self.DirectCommitThreshold() {
                     self.OrderAnchors(anchor);
                 }

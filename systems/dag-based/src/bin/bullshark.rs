@@ -16,7 +16,7 @@ fn main() {
         .into_par_iter()
         .for_each(|k_validators| {
             // 1 jiffy == 1 real millisecond
-            let sim = SimulationBuilder::NewDefault()
+            let mut sim = SimulationBuilder::NewDefault()
                 .AddPool::<Bullshark>("Validators", k_validators)
                 .MaxLatency(Jiffies(400)) // 400 ms of max network latency
                 .TimeBudget(Jiffies(240_000)) // Simulating 4 min of real time execution
@@ -34,7 +34,6 @@ fn main() {
             let ordered = anykv::Get::<(f64, usize)>("avg_latency").1;
             let avg_latency = anykv::Get::<(f64, usize)>("avg_latency").0;
 
-            anykv::Clear();
             writeln!(
                 file.lock().unwrap(),
                 "{} {} {}",

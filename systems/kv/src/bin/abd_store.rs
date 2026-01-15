@@ -8,7 +8,7 @@ use matrix::{global::anykv, *};
 
 fn main() {
     // 1 jiffy == 1ms
-    let sim = SimulationBuilder::NewDefault()
+    let mut sim = SimulationBuilder::NewDefault()
         .AddPool::<Replica>(REPLICA_POOL_NAME, 10)
         .AddPool::<Client>(CLIENT_POOL_NAME, 4)
         .TimeBudget(Jiffies(50000))

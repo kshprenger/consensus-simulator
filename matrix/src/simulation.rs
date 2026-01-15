@@ -61,7 +61,7 @@ impl Simulation {
         }
     }
 
-    pub fn Run(mut self) {
+    pub fn Run(&mut self) {
         self.Start();
 
         while global::Now() < self.time_budget {
@@ -103,5 +103,11 @@ impl Simulation {
             .iter_mut()
             .filter_map(|actor| Some((actor.borrow().PeekClosest()?, actor.clone())))
             .min_by_key(|tuple| tuple.0)
+    }
+}
+
+impl Drop for Simulation {
+    fn drop(&mut self) {
+        global::Drop(); // Clear thread_locals
     }
 }

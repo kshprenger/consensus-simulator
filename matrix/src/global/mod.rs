@@ -21,8 +21,8 @@ pub(crate) use access::SetupAccess;
 
 pub(crate) use clock::FastForwardClock;
 
-pub(crate) fn ResetGlobals() {
-    clock::Reset();
-    tso::Reset();
-    anykv::Clear();
+pub(crate) fn Drop() {
+    clock::Drop();
+    tso::Drop();
+    anykv::Drop();
 }
