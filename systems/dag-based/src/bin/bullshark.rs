@@ -5,43 +5,44 @@ use dscale::{
     BandwidthDescription, Distributions, LatencyDescription, SimulationBuilder, global::anykv,
     time::Jiffies,
 };
-
+use rayon::prelude::*;
 use std::io::Write;
 
 fn main() {
-    let file = File::create("results_bullshark.csv").unwrap();
-    let file = Mutex::new(file);
+    let k_validators = 1000;
+    let mb_per_sec = [8000, 9000, 10000, 11000];
 
-    (3000..=3000).into_iter().for_each(|k_validators| {
-        // 1 jiffy == 1 real millisecond
-        let mut sim = SimulationBuilder::NewDefault()
-            .AddPool::<Bullshark>("Validators", k_validators)
-            .LatencyTopology(&[LatencyDescription::WithinPool(
-                "Validators",
-                Distributions::Normal(Jiffies(50), Jiffies(10)),
-            )])
-            .TimeBudget(Jiffies(3600_000)) // Simulating hour of real time execution
-            .NICBandwidth(BandwidthDescription::Bounded(
-                5 * 1024 * 1024 / (8 * 1000), // 5Mb/sec NICs
-            ))
-            .Seed(k_validators as u64)
-            .Build();
+    mb_per_sec.into_iter().for_each(|bandwidth| {
+        let file = Mutex::new(File::create(format!("bullshark_{}.csv", bandwidth)).unwrap());
 
-        // (avg_latency, total_vertex)
-        anykv::Set::<(f64, usize)>("avg_latency", (0.0, 0));
+        let seeds = [4567898765, 33333, 982039];
 
-        sim.Run();
+        seeds.into_par_iter().for_each(|seed| {
+            anykv::Set::<(f64, usize)>("avg_latency", (0.0, 0));
 
-        let ordered = anykv::Get::<(f64, usize)>("avg_latency").1;
-        let avg_latency = anykv::Get::<(f64, usize)>("avg_latency").0;
+            let mut sim = SimulationBuilder::NewDefault()
+                .AddPool::<Bullshark>("Validators", k_validators)
+                .LatencyTopology(&[LatencyDescription::WithinPool(
+                    "Validators",
+                    Distributions::Normal(Jiffies(50), Jiffies(10)),
+                )])
+                .TimeBudget(Jiffies(60_000)) // Simulating 1 min of real time execution
+                .NICBandwidth(BandwidthDescription::Bounded(
+                    bandwidth * 1024 * 1024 / (8 * 1000), // bandwidth Mb/sec NICs
+                ))
+                .Seed(seed)
+                .Build();
 
-        writeln!(
-            file.lock().unwrap(),
-            "{} {} {}",
-            k_validators,
-            ordered,
-            avg_latency
-        )
-        .unwrap();
-    })
+            // (avg_latency, total_vertex)
+            anykv::Set::<(f64, usize)>("avg_latency", (0.0, 0));
+
+            sim.Run();
+
+            let ordered = anykv::Get::<(f64, usize)>("avg_latency").1;
+            let avg_latency = anykv::Get::<(f64, usize)>("avg_latency").0;
+            let load = anykv::Get::<usize>("avg_network_load"); // Bytes per jiffy at single NIC
+
+            writeln!(file.lock().unwrap(), "{} {} {}", ordered, avg_latency, load).unwrap();
+        });
+    });
 }
