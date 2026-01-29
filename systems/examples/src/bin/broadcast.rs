@@ -20,12 +20,12 @@ fn main() {
 
     let start = Instant::now();
     sim.Run();
+    let elapsed = start.elapsed();
 
     let received_count = anykv::Get::<usize>("broadcast_received");
     println!(
         "Done, elapsed: {:?}. Broadcast messages received: {}",
-        start.elapsed(),
-        received_count
+        elapsed, received_count
     );
     assert_eq!(received_count, 49995);
 }
