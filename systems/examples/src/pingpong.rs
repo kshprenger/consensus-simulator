@@ -18,14 +18,12 @@ impl Message for PingPongMessage {
 }
 
 #[derive(Default)]
-pub struct PingPongProcess {
-    timer_id: TimerId,
-}
+pub struct PingPongProcess {}
 
 impl ProcessHandle for PingPongProcess {
     fn Start(&mut self) {
         if Rank() == 1 {
-            self.timer_id = ScheduleTimerAfter(Jiffies(100));
+            SendTo(2, PingPongMessage::Ping);
         }
     }
 
@@ -49,9 +47,5 @@ impl ProcessHandle for PingPongProcess {
         }
     }
 
-    fn OnTimer(&mut self, id: TimerId) {
-        assert!(id == self.timer_id);
-        anykv::Modify::<usize>("pings", |p| *p += 1);
-        SendTo(2, PingPongMessage::Ping);
-    }
+    fn OnTimer(&mut self, _id: TimerId) {}
 }
