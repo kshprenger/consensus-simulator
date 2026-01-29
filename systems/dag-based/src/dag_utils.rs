@@ -5,10 +5,12 @@ use std::{
 };
 
 use matrix::{
-    Now, ProcessId, Rank,
-    global::anykv,
+    Message, Now, ProcessId, Rank,
+    global::{anykv, configuration::ProcessNumber},
     time::{self},
 };
+
+use crate::consistent_broadcast::ID_SIZE;
 
 const GC_REMAIN: usize = usize::MAX;
 
@@ -58,6 +60,28 @@ impl PartialOrd for Vertex {
 impl Ord for Vertex {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         (self.round, self.source).cmp(&(other.round, other.source))
+    }
+}
+
+fn CertificateSize() -> usize {
+    (ProcessNumber() / 8) + ID_SIZE
+}
+
+#[derive(Clone)]
+pub enum VertexMessage {
+    Vertex(VertexPtr),
+    Genesis(VertexPtr),
+}
+
+impl Message for VertexMessage {
+    fn VirtualSize(&self) -> usize {
+        // Round, ProcessId
+        4 + 4
+            + CertificateSize()
+                * match self {
+                    VertexMessage::Genesis(v) => v.strong_edges.len(),
+                    VertexMessage::Vertex(v) => v.strong_edges.len(),
+                }
     }
 }
 

@@ -10,29 +10,8 @@ use matrix::{global::configuration, *};
 
 use crate::{
     consistent_broadcast::{BCBMessage, ByzantineConsistentBroadcast, ID_SIZE},
-    dag_utils::{RoundBasedDAG, SameVertex, Vertex, VertexPtr},
+    dag_utils::{RoundBasedDAG, SameVertex, Vertex, VertexMessage, VertexPtr},
 };
-
-#[derive(Clone)]
-pub enum BullsharkMessage {
-    Vertex((usize, VertexPtr)),
-    Genesis((usize, VertexPtr)),
-}
-
-impl Message for BullsharkMessage {
-    fn VirtualSize(&self) -> usize {
-        // Round, ProcessId
-        4 + 4
-            + match self {
-                BullsharkMessage::Genesis((proc_num, v)) => {
-                    v.strong_edges.len() * ((proc_num / 8) + ID_SIZE)
-                }
-                BullsharkMessage::Vertex((proc_num, v)) => {
-                    v.strong_edges.len() * ((proc_num / 8) + ID_SIZE)
-                }
-            }
-    }
-}
 
 pub struct Bullshark {
     rbcast: ByzantineConsistentBroadcast,
@@ -80,14 +59,14 @@ impl ProcessHandle for Bullshark {
         });
 
         self.rbcast
-            .ReliablyBroadcast(BullsharkMessage::Genesis((self.proc_num, genesis_vertex)));
+            .ReliablyBroadcast(VertexMessage::Genesis(genesis_vertex));
     }
 
     // DAG construction: part 1
     fn OnMessage(&mut self, from: ProcessId, message: MessagePtr) {
         if let Some(bs_message) = self.rbcast.Process(from, message.As::<BCBMessage>()) {
-            match bs_message.As::<BullsharkMessage>().as_ref() {
-                BullsharkMessage::Genesis((_, v)) => {
+            match bs_message.As::<VertexMessage>().as_ref() {
+                VertexMessage::Genesis(v) => {
                     Debug!("Got genesis");
                     debug_assert!(v.round == 0);
                     self.dag.AddVertex(v.clone());
@@ -95,7 +74,7 @@ impl ProcessHandle for Bullshark {
                     return;
                 }
 
-                BullsharkMessage::Vertex((_, v)) => {
+                VertexMessage::Vertex(v) => {
                     Debug!("Got vertex from: {from}");
 
                     // Validity check
@@ -243,8 +222,7 @@ impl Bullshark {
     fn BroadcastVertex(&mut self, round: usize) {
         let v = self.CreateVertex(round);
         self.TryAddToDAG(v.clone());
-        self.rbcast
-            .ReliablyBroadcast(BullsharkMessage::Vertex((self.proc_num, v)));
+        self.rbcast.ReliablyBroadcast(VertexMessage::Vertex(v));
     }
 
     fn TryAddToDAG(&mut self, v: VertexPtr) -> bool {
