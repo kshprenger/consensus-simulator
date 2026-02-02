@@ -17,7 +17,7 @@ fn main() {
             File::create(format!("sparse_bullshark_threshold_{}.csv", threshold)).unwrap(),
         );
 
-        let seeds = [4567898765, 33333, 982039, 1, 234567890];
+        let seeds = [1, 2, 3];
         // 5% -> quorum ; by 5% step
         let samples = (((k_validators as f64 * 0.05) as usize)
             ..=((k_validators as f64 * 0.67) as usize))
@@ -35,7 +35,7 @@ fn main() {
                     "Validators",
                     Distributions::Normal(Jiffies(50), Jiffies(10)),
                 )])
-                .TimeBudget(Jiffies(7200_000)) // Simulating 2 hours of real time execution
+                .TimeBudget(Jiffies(36000_000)) // Simulating 10 hours of real time execution
                 .NICBandwidth(BandwidthDescription::Bounded(5 * 1024 * 1024 / (8 * 1000)))
                 .Seed(*seed)
                 .Build();
