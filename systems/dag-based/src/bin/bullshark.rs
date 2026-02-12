@@ -26,7 +26,7 @@ fn main() {
                     "Validators",
                     Distributions::Normal(Jiffies(50), Jiffies(10)),
                 )])
-                .TimeBudget(Jiffies(60_000)) // Simulating 10 min of real time execution
+                .TimeBudget(Jiffies(60_000)) // Simulating 1 min of real time execution
                 .NICBandwidth(BandwidthDescription::Bounded(
                     bandwidth * 1024 * 1024 / (8 * 1000), // bandwidth Mb/sec NICs
                 ))
